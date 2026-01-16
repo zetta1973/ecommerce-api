@@ -1,0 +1,194 @@
+# AGENTS.md
+
+This file contains guidelines and commands for agentic coding agents working in this Java Spring Boot e-commerce API repository.
+
+## Build & Test Commands
+
+### Core Commands
+- **Build project**: `./mvnw clean compile` or `mvn clean compile`
+- **Run tests**: `./mvnw test` or `mvn test`
+- **Run single test**: `./mvnw test -Dtest=ClassName` (e.g., `./mvnw test -Dtest=AuthControllerTest`)
+- **Run single test method**: `./mvnw test -Dtest=ClassName#methodName` (e.g., `./mvnw test -Dtest=AuthControllerTest#shouldRegisterUser`)
+- **Package application**: `./mvnw clean package`
+- **Generate test coverage report**: `./mvnw jacoco:report`
+- **Check test coverage**: `./mvnw jacoco:check`
+- **Run application locally**: `./mvnw spring-boot:run`
+
+### Docker Commands
+- **Build Docker image**: `docker build -t ecommerce-api:1.0.x .`
+- **Run with Docker Compose**: `docker-compose up --build`
+
+## Code Style Guidelines
+
+### Project Structure
+```
+src/main/java/com/ecommerce/
+├── controller/     # REST controllers
+├── service/        # Business logic
+├── repository/     # JPA repositories
+├── model/          # JPA entities
+├── dto/            # Data Transfer Objects
+├── security/       # Security components
+├── config/         # Spring configuration
+└── kafka/          # Kafka components
+```
+
+### Naming Conventions
+- **Classes**: PascalCase (e.g., `AuthController`, `UserService`)
+- **Methods**: camelCase (e.g., `registerUser`, `findById`)
+- **Variables**: camelCase (e.g., `userRepository`, `passwordEncoder`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `JWT_EXPIRATION`)
+- **Packages**: lowercase (e.g., `com.ecommerce.controller`)
+- **Files**: PascalCase matching class name
+
+### Import Organization
+1. Java standard library imports (`java.*`)
+2. Jakarta EE imports (`jakarta.*`)
+3. Spring framework imports (`org.springframework.*`)
+4. Third-party library imports
+5. Project-specific imports (`com.ecommerce.*`)
+
+Use `*` imports sparingly, prefer explicit imports.
+
+### Code Formatting
+- **Indentation**: 4 spaces, no tabs
+- **Line length**: Maximum 120 characters
+- **Braces**: Opening brace on same line, closing brace on new line
+- **Spacing**: One space around operators, after commas, after keywords
+- **Blank lines**: Between methods, between logical sections
+
+### Annotations
+- **Lombok**: Use `@Data` for entities with getters/setters, `@RequiredArgsConstructor` for dependency injection
+- **Spring**: `@RestController` for controllers, `@Service` for services, `@Repository` for repositories
+- **Validation**: Use `@Valid` for request bodies, `@NotBlank`, `@Email` etc. on DTO fields
+- **JPA**: `@Entity`, `@Table`, `@Id`, `@GeneratedValue` for entities
+
+### Error Handling
+- Use `@RestControllerAdvice` with `@ExceptionHandler` for global exception handling
+- Return `ResponseEntity` with appropriate HTTP status codes
+- Use `Map.of("error", "message")` for error responses
+- Validate input using Jakarta validation annotations
+
+### Security Patterns
+- JWT-based authentication with `JwtUtil` class
+- Role-based access control using `@PreAuthorize`
+- Password encoding with BCrypt
+- Method-level security enabled
+
+### Database & JPA
+- Entities implement `UserDetails` when they represent users
+- Use `@Table(name = "table_name")` for custom table names
+- Relationships: `@ManyToOne`, `@OneToMany`, etc.
+- Repository interfaces extend `JpaRepository`
+
+### Testing Guidelines
+- Use JUnit 5 (`@Test`, `@BeforeEach`, `@DisplayName`)
+- Mock dependencies with Mockito
+- Use `MockMvc` for controller tests
+- Test file naming: `ClassNameTest.java`
+- Arrange-Act-Assert pattern in tests
+- Use `@SpringBootTest` for integration tests
+- H2 in-memory database for testing
+
+### DTO Patterns
+- Use Lombok `@Data` annotation
+- Include validation annotations (`@NotBlank`, `@Email`, etc.)
+- Separate request/response DTOs when needed
+- Use meaningful names like `UserRegisterDto`, `ProductResponseDto`
+
+### Logging
+- Use SLF4J with `private static final Logger logger = LoggerFactory.getLogger(ClassName.class);`
+- Log important events, errors, and debugging information
+- Use appropriate log levels (INFO, WARN, ERROR)
+
+### Kafka Integration
+- Producers in `KafkaProducer` class
+- Consumers in `KafkaConsumer` class
+- Event classes in dedicated package
+- Handle serialization/deserialization properly
+
+### API Documentation
+- OpenAPI 3.0 specification in `src/main/resources/openapi.yaml`
+- Use meaningful endpoint paths
+- Include request/response examples
+- Document authentication requirements
+
+### Configuration
+- Main config: `src/main/resources/application.yml`
+- Test config: `src/test/resources/application-test.yml`
+- Use Spring profiles for different environments
+- Environment-specific properties
+
+## Development Workflow
+
+1. **Before making changes**:
+   - Run existing tests: `./mvnw test`
+   - Understand existing patterns in similar files
+
+2. **When adding new features**:
+   - Follow the established package structure
+   - Create corresponding test files
+   - Add proper validation and error handling
+   - Update OpenAPI spec if needed
+
+3. **After making changes**:
+   - Run tests: `./mvnw test`
+   - Check test coverage: `./mvnw jacoco:report`
+   - Build project: `./mvnw clean package`
+   - Run linting if configured
+
+## Quality Standards
+- Test coverage requirement: 100% (enforced by JaCoCo)
+- All public methods should be tested
+- Include positive and negative test cases
+- Validate input parameters and handle errors gracefully
+- Follow REST API best practices
+
+## Common Patterns
+
+### Controller Pattern
+```java
+@RestController
+@RequestMapping("/path")
+public class ExampleController {
+    private final ExampleService service;
+    
+    public ExampleController(ExampleService service) {
+        this.service = service;
+    }
+    
+    @PostMapping
+    public ResponseEntity<?> create(@Valid @RequestBody ExampleDto dto) {
+        // implementation
+    }
+}
+```
+
+### Service Pattern
+```java
+@Service
+public class ExampleService {
+    private final ExampleRepository repository;
+    
+    public ExampleService(ExampleRepository repository) {
+        this.repository = repository;
+    }
+    
+    public Example create(ExampleDto dto) {
+        // implementation
+    }
+}
+```
+
+### Entity Pattern
+```java
+@Data
+@Entity
+@Table(name = "examples")
+public class Example {
+    @Id @GeneratedValue
+    private Long id;
+    
+    // fields
+}
+```

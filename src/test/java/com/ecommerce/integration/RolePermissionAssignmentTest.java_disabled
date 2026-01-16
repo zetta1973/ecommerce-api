@@ -1,0 +1,61 @@
+package com.ecommerce.integration;
+
+import com.ecommerce.model.Permission;
+import com.ecommerce.model.Role;
+import com.ecommerce.repository.PermissionRepository;
+import com.ecommerce.repository.RoleRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Import(TestConfig.class)
+class RolePermissionAssignmentTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private RoleRepository roleRepo;
+
+    @Autowired
+    private PermissionRepository permRepo;
+
+    @BeforeEach
+    void setup() {
+        permRepo.deleteAll();
+        roleRepo.deleteAll();
+
+        Permission p = new Permission();
+        p.setName("READ_USERS");
+        permRepo.save(p);
+
+        Role r = new Role();
+        r.setName("MANAGER");
+        roleRepo.save(r);
+    }
+
+    @Test
+    void shouldAssignPermissionToRole() throws Exception {
+        mockMvc.perform(post("/admin/roles/MANAGER/permissions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("\"READ_USERS\""))
+                .andExpect(status().isOk());
+
+        Role updated = roleRepo.findByName("MANAGER").get();
+        assertThat(updated.getPermissions()).anyMatch(p -> p.getName().equals("READ_USERS"));
+    }
+}

@@ -1,0 +1,79 @@
+package com.ecommerce.integration;
+
+import com.ecommerce.model.Role;
+import com.ecommerce.model.User;
+import com.ecommerce.security.JwtUtil;
+import com.ecommerce.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Import(TestConfig.class)
+class PermissionAccessTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepo;
+
+    @Autowired
+    private PasswordEncoder encoder;
+
+    private User admin;
+    private User normalUser;
+
+    @BeforeEach
+    void setup() {
+        userRepo.deleteAll();
+
+        admin = new User();
+        admin.setUsername("admin");
+        admin.setEmail("admin@example.com");
+        admin.setPassword(encoder.encode("adminpass"));
+        Role adminRole = new Role();
+        adminRole.setName("ADMIN");
+        admin.setRole(adminRole);
+        userRepo.save(admin);
+
+        normalUser = new User();
+        normalUser.setUsername("user");
+        normalUser.setEmail("user@example.com");
+        normalUser.setPassword(encoder.encode("userpass"));
+        Role userRole = new Role();
+        userRole.setName("USER");
+        normalUser.setRole(userRole);
+        userRepo.save(normalUser);
+    }
+
+    @Test
+    void shouldAllowAdminToAccessUsers() throws Exception {
+        String token = JwtUtil.generateToken(admin);
+
+        mockMvc.perform(get("/admin/users")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldRejectUserWithoutPermission() throws Exception {
+        String token = JwtUtil.generateToken(normalUser);
+
+        mockMvc.perform(get("/admin/users")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+}

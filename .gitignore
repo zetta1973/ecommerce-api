@@ -1,0 +1,45 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Application specific
+*.jar
+!gradle-wrapper.jar
+.env
+*.swp
+*.swo
+*~
+
+# Kubernetes secrets (DO NOT COMMIT)
+k8s/secrets/
+*.secret.yaml
+secrets.yaml

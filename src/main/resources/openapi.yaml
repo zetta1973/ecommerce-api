@@ -1,0 +1,356 @@
+openapi: 3.0.3
+info:
+  title: Ecommerce API
+  version: 1.0.0
+  description: API REST para plataforma de comercio electrónico
+
+servers:
+  - url: https://{env}.api.ecommerce.com
+    variables:
+      env:
+        default: dev
+        enum:
+          - dev
+          - staging
+          - prod
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserRegisterDto:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - username
+        - email
+        - password
+      example:
+        username: "juan"
+        email: "juan@ejemplo.com"
+        password: "claveSegura"
+
+    UserLoginDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+      example:
+        email: "juan@ejemplo.com"
+        password: "claveSegura"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
+      example:
+        id: 1
+        username: "juan"
+        email: "juan@ejemplo.com"
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      example:
+        code: 400
+        message: "Solicitud inválida"
+
+    ProductDto:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        stock:
+          type: integer
+      example:
+        name: "Camiseta"
+        description: "Deportiva"
+        price: 19.99
+        stock: 10
+
+    ProductResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        stock:
+          type: integer
+      example:
+        id: 1
+        name: "Camiseta"
+        description: "Deportiva"
+        price: 19.99
+        stock: 10
+
+    OrderRequestDto:
+      type: object
+      properties:
+        productIds:
+          type: array
+          items:
+            type: integer
+      example:
+        productIds: [1, 2]
+
+    OrderResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductResponseDto'
+        createdAt:
+          type: string
+          format: date-time
+      example:
+        id: 1
+        userId: 10
+        products:
+          - id: 1
+            name: "Camiseta"
+            description: "Deportiva"
+            price: 19.99
+            stock: 10
+        createdAt: "2025-10-28T12:01:00Z"
+
+    AssignPermissionDto:
+      type: object
+      properties:
+        roleName:
+          type: string
+        permissionName:
+          type: string
+      example:
+        roleName: "admin"
+        permissionName: "READ_USERS"
+
+paths:
+  /auth/register:
+    post:
+      summary: Registro de usuario
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegisterDto'
+            examples:
+              ejemplo:
+                value:
+                  username: "juan"
+                  email: "juan@ejemplo.com"
+                  password: "claveSegura"
+      responses:
+        '201':
+          description: Usuario creado exitosamente
+
+  /auth/login:
+    post:
+      summary: Inicio de sesión
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginDto'
+            examples:
+              ejemplo:
+                value:
+                  email: "juan@ejemplo.com"
+                  password: "claveSegura"
+      responses:
+        '200':
+          description: Token JWT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                example:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+  /products:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Listar productos
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductResponseDto'
+              examples:
+                ejemplo:
+                  value:
+                    - id: 1
+                      name: "Camiseta"
+                      description: "Deportiva"
+                      price: 19.99
+                      stock: 10
+    post:
+      security:
+        - bearerAuth: []
+      summary: Crear un nuevo producto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductDto'
+            examples:
+              ejemplo:
+                value:
+                  name: "Camiseta"
+                  description: "Deportiva"
+                  price: 19.99
+                  stock: 10
+      responses:
+        '201':
+          description: Producto creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponseDto'
+              examples:
+                ejemplo:
+                  value:
+                    id: 1
+                    name: "Camiseta"
+                    description: "Deportiva"
+                    price: 19.99
+                    stock: 10
+
+  /orders:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Listar pedidos del usuario
+      responses:
+        '200':
+          description: Lista de pedidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderResponseDto'
+    post:
+      security:
+        - bearerAuth: []
+      summary: Crear un pedido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequestDto'
+            examples:
+              ejemplo:
+                value:
+                  productIds: [1, 2]
+      responses:
+        '201':
+          description: Pedido creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponseDto'
+
+  /admin/ping:
+    get:
+      summary: Prueba de conexión (ping)
+      responses:
+        '200':
+          description: pong
+
+  /admin/users:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Listar usuarios
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+              examples:
+                ejemplo:
+                  value:
+                    - id: 1
+                      username: "juan"
+                      email: "juan@ejemplo.com"
+
+  /admin/roles/assign:
+    post:
+      security:
+        - bearerAuth: []
+      summary: Asignar permiso a rol
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionDto'
+            examples:
+              ejemplo:
+                value:
+                  roleName: "admin"
+                  permissionName: "READ_USERS"
+      responses:
+        '200':
+          description: Permiso asignado correctamente

@@ -1,0 +1,51 @@
+package com.ecommerce.integration;
+
+import com.ecommerce.model.Product;
+import com.ecommerce.repository.ProductRepository;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+
+import java.math.BigDecimal;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+@ActiveProfiles("test")
+@Import(TestConfig.class)
+class ProductIntegrationTest {
+
+    @Autowired
+    private ProductRepository productRepo;
+
+    @Test
+    void shouldSaveAndRetrieveProduct() {
+        Product p = new Product();
+        p.setName("Test");
+        p.setPrice(BigDecimal.valueOf(10));
+        p.setStock(5);
+
+        productRepo.save(p);
+
+        assertThat(productRepo.findAll()).hasSize(1);
+    }
+
+    @Test
+    void shouldPersistProductFields() {
+        Product p = new Product();
+        p.setName("Laptop");
+        p.setPrice(BigDecimal.valueOf(999.99));
+        p.setStock(10);
+
+        Product saved = productRepo.save(p);
+
+        Product found = productRepo.findById(saved.getId()).orElseThrow();
+        assertThat(found.getName()).isEqualTo("Laptop");
+        assertThat(found.getPrice()).isEqualByComparingTo("999.99");
+        assertThat(found.getStock()).isEqualTo(10);
+    }
+}

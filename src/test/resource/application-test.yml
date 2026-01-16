@@ -1,0 +1,32 @@
+spring:
+  profiles:
+    active: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  autoconfigure:
+    exclude:
+
+  kafka:
+    bootstrap-servers: localhost:1234
+    consumer:
+      enabled: false
+    producer:
+      enabled: false
+
+logging:
+  level:
+    com.ecommerce: INFO
+    org.springframework: WARN

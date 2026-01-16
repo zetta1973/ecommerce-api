@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: default
+
+# Recursos base
+resources:
+  - deployment.yaml
+  - configmap.yaml
+
+# Generador de secret (opcional, descomentar si necesitas)
+# secretGenerator:
+#   - name: ecommerce-secrets
+#     literals:
+#       - postgres-username=user
+#       - postgres-password=pass
+
+# Common labels
+commonLabels:
+  app: ecommerce-api
+  managed-by: kustomize
+
+# Imagen con tag dinámico (sobrescrito por kubectl apply --image)
+images:
+  - name: ghcr.io/tu-usuario/ecommerce-api
+    newTag: latest
+
+# Réplicas por defecto (puede ser sobrescrito por overlays)
+replicas:
+  - name: ecommerce-api
+    count: 2

@@ -1,0 +1,165 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ecommerce-api
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run tests
+        run: mvn test
+
+      - name: Generate test coverage report
+        run: mvn jacoco:report
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: target/site/jacoco/
+
+  build-image:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push'
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-to-kubernetes:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: build-image
+    if: github.event_name == 'push'
+    
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      url: https://ecommerce.${{ github.ref_name == 'main' && 'prod' || 'staging' }}.tu-dominio.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl for Rancher
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+
+      - name: Update Kubernetes manifests
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+          sed -i "s|ghcr.io/tu-usuario/ecommerce-api:latest|ghcr.io/${{ github.repository }}/ecommerce-api:${IMAGE_TAG}|g" k8s/deployment.yaml
+          
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            sed -i 's/SPRING_PROFILES_ACTIVE: "prod"/SPRING_PROFILES_ACTIVE: "prod"/g' k8s/deployment.yaml
+          else
+            sed -i 's/SPRING_PROFILES_ACTIVE: "prod"/SPRING_PROFILES_ACTIVE: "staging"/g' k8s/deployment.yaml
+          fi
+
+      - name: Apply ConfigMap
+        run: |
+          kubectl apply -f k8s/configmap.yaml --kubeconfig=kubeconfig
+
+      - name: Apply Secrets
+        run: |
+          if kubectl get secret ecommerce-secrets --kubeconfig=kubeconfig; then
+            echo "Secret already exists, skipping creation"
+          else
+            kubectl apply -f k8s/secrets-example.yaml --kubeconfig=kubeconfig
+          fi
+
+      - name: Apply Deployment
+        run: |
+          kubectl apply -f k8s/deployment.yaml --kubeconfig=kubeconfig
+
+      - name: Wait for deployment to be ready
+        run: |
+          kubectl rollout status deployment/ecommerce-api --kubeconfig=kubeconfig --timeout=5m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -l app=ecommerce-api --kubeconfig=kubeconfig
+          kubectl get svc ecommerce-api-service --kubeconfig=kubeconfig
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy-to-kubernetes]
+    if: always()
+    
+    steps:
+      - name: Send notification
+        run: |
+          if [ "${{ needs.deploy-to-kubernetes.result }}" = "success" ]; then
+            echo "Deployment successful!"
+            # Aquí puedes agregar notificaciones Slack, Teams, email, etc.
+          else
+            echo "Deployment failed!"
+            exit 1
+          fi

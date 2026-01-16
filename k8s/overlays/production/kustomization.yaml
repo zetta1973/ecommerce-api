@@ -1,0 +1,76 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: production
+
+# Base resources
+bases:
+  - ../
+
+# Nombre del prefix para recursos
+namePrefix: prod-
+
+# Imagen específica para producción
+images:
+  - name: ghcr.io/tu-usuario/ecommerce-api
+    newTag: latest
+
+# Réplicas para producción
+replicas:
+  - name: ecommerce-api
+    count: 3
+
+# ConfigMap override
+configMapGenerator:
+  - name: ecommerce-config
+    behavior: merge
+    literals:
+      - spring-jpa-show-sql=false
+      - logging-level-com-ecommerce=INFO
+      - logging-level-root=WARN
+
+# Configuración de recursos (mayor en producción)
+patchesStrategicMerge:
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ecommerce-api
+    spec:
+      template:
+        spec:
+          containers:
+            - name: ecommerce-api
+              resources:
+                requests:
+                  memory: "1Gi"
+                  cpu: "500m"
+                limits:
+                  memory: "2Gi"
+                  cpu: "1000m"
+---
+# HPA específico para producción
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ecommerce-api-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: prod-ecommerce-api
+  minReplicas: 3
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
