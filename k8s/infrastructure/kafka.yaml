@@ -17,34 +17,27 @@ spec:
       - name: redpanda
         image: docker.redpanda.com/redpandadata/redpanda:v24.2.2
         command:
-        - redpanda
+        - /usr/bin/redpanda
         - start
-        - --smp
-        - "1"
-        - --reserve-memory
-        - "0M"
+        - --smp=1
+        - --memory=512M
+        - --reserve-memory=0M
         - --overprovisioned
-        - --node-id
-        - "0"
-        - --kafka-addr
-        - "PLAINTEXT://0.0.0.0:9092"
-        - --advertise-kafka-addr
-        - "PLAINTEXT://kafka:9092"
-        - --pandaproxy-addr
-        - "0.0.0.0:8082"
-        - --schema-registry-addr
-        - "0.0.0.0:8081"
+        - --node-id=0
+        - --check=false
+        - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+        - --advertise-kafka-addr=PLAINTEXT://kafka:9092
         ports:
-        - containerPort: 9092  # Kafka
-        - containerPort: 8081  # Schema Registry
-        - containerPort: 8082  # HTTP Proxy
+        - containerPort: 9092
         resources:
           requests:
-            memory: "256Mi"
+            memory: "512Mi"
             cpu: "100m"
           limits:
-            memory: "512Mi"
+            memory: "768Mi"  # Redpanda necesita algo más de memoria
             cpu: "200m"
+        securityContext:
+          privileged: false
 ---
 apiVersion: v1
 kind: Service
@@ -59,7 +52,3 @@ spec:
       port: 9092
       targetPort: 9092
       name: broker
-    - protocol: TCP
-      port: 8081
-      targetPort: 8081
-      name: schema-registry
