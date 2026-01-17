@@ -58,7 +58,10 @@ jobs:
 
       - name: Build JAR
         run: mvn package -DskipTests
-
+      - name: Verify JAR content
+        run: |
+          ls -la target/
+          java -jar target/*.jar --help || echo "JAR is not executable"
       - name: Debug JAR file
         run: |
           ls -la target/
@@ -108,14 +111,15 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t ecommerce-api:${{ github.sha }} .
-
       - name: Load image into Kind
         run: kind load docker-image ecommerce-api:${{ github.sha }} --name ecommerce
-
+      - name: Verify image loaded in Kind
+        run: |
+          # List images in the Kind node
+          docker exec kind-ecommerce-control-plane crictl images | grep ecommerce-api
       - name: Update application manifests
         run: |
           sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-api:${{ github.sha }}|g" k8s/application/deployment.yaml
-
       - name: Apply application manifests
         run: |
           kubectl apply --context kind-ecommerce -f k8s/application/configmap.yaml
@@ -141,7 +145,19 @@ jobs:
           kubectl describe pod --context kind-ecommerce -l app=ecommerce-api
           echo "📋 Application logs:"
           kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 || echo "No logs available"
-
+      - name: Diagnose application pod status
+        run: |
+          echo "🔍 Checking pod status..."
+          kubectl get pods --context kind-ecommerce -l app=ecommerce-api -o wide
+          
+          echo "📋 Pod description:"
+          kubectl describe pod --context kind-ecommerce -l app=ecommerce-api
+          
+          echo "📦 Node resources:"
+          kubectl describe node --context kind-ecommerce
+          
+          echo "🔄 Events in namespace:"
+          kubectl get events --context kind-ecommerce --sort-by=.metadata.creationTimestamp
       - name: Test application endpoints (tolerant)
         run: |
           # Port-forward in background
