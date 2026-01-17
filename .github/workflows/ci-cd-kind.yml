@@ -76,9 +76,24 @@ jobs:
           kubectl apply -f k8s/infrastructure/postgres.yaml
           kubectl apply -f k8s/infrastructure/kafka.yaml
           
-          # Wait for infrastructure to be ready
-          kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s
-          kubectl wait --for=condition=ready pod -l app=kafka --timeout=180s
+          # Wait for pods to be created and ready
+          for i in {1..30}; do
+            if kubectl get pod -l app=postgres --no-headers | grep -q "Running"; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 5
+          done
+          
+          for i in {1..36}; do
+            if kubectl get pod -l app=kafka --no-headers | grep -q "Running"; then
+              echo "Kafka is ready!"
+              break
+            fi
+            echo "Waiting for Kafka... ($i/36)"
+            sleep 5
+          done
 
       - name: Build Docker image
         run: docker build -t ecommerce-api:${{ github.sha }} .
