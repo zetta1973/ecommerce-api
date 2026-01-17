@@ -6,7 +6,6 @@ import com.ecommerce.model.Permission;
 import com.ecommerce.model.Role;
 import com.ecommerce.repository.PermissionRepository;
 import com.ecommerce.repository.RoleRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

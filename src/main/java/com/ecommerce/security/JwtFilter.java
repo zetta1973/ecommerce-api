@@ -22,8 +22,7 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final UserRepository userRepo;
-    private final JwtUtil jwtUtil;
-
+    
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -37,10 +36,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
             String token = authHeader.substring(7);
 
-            if (jwtUtil.validateToken(token)) {
+            if (JwtUtil.validateToken(token)) {
 
-                String email = jwtUtil.extractEmail(token);
-                String role = jwtUtil.extractRole(token);
+                String email = JwtUtil.extractEmail(token);
+                String role = JwtUtil.extractRole(token);
 
                 User user = userRepo.findByEmail(email).orElse(null);
 

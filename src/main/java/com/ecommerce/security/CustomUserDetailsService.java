@@ -1,6 +1,5 @@
 package com.ecommerce.security;
 
-import com.ecommerce.model.User;
 import com.ecommerce.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

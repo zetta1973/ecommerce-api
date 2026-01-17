@@ -3,7 +3,6 @@ package com.ecommerce.service;
 import com.ecommerce.model.User;
 import com.ecommerce.repository.UserRepository;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

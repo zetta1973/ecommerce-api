@@ -18,12 +18,11 @@ import static org.mockito.Mockito.when;
 class GlobalExceptionHandlerTest {
 
     private GlobalExceptionHandler exceptionHandler;
-    private WebRequest request;
-
+    
     @BeforeEach
     void setUp() {
         exceptionHandler = new GlobalExceptionHandler();
-        request = mock(WebRequest.class);
+        mock(WebRequest.class);
     }
 
     @Test

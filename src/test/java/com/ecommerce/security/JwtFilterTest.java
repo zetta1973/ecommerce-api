@@ -40,7 +40,7 @@ class JwtFilterTest {
 
     @BeforeEach
     void setUp() {
-        jwtFilter = new JwtFilter(userRepository, null);
+        jwtFilter = new JwtFilter(userRepository);
         SecurityContextHolder.clearContext();
     }
 
@@ -78,7 +78,7 @@ class JwtFilterTest {
     void shouldHaveConstructorWithDependencies() {
         UserRepository mockRepo = mock(UserRepository.class);
         JwtUtil mockJwtUtil = mock(JwtUtil.class);
-        JwtFilter filter = new JwtFilter(mockRepo, mockJwtUtil);
+        JwtFilter filter = new JwtFilter(mockRepo);
         assertThat(filter).isNotNull();
     }
 }

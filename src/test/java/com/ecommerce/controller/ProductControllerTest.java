@@ -3,7 +3,6 @@ package com.ecommerce.controller;
 import com.ecommerce.model.Product;
 import com.ecommerce.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.MediaType;
