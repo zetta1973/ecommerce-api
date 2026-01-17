@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ecommerce-api
-  namespace: ecommerce
+  namespace: default
   labels:
     app: ecommerce-api
 spec:
@@ -39,15 +39,9 @@ spec:
               name: ecommerce-config
               key: datasource-url
         - name: SPRING_DATASOURCE_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: ecommerce-secret
-              key: POSTGRES_USER
+          value: "user"
         - name: SPRING_DATASOURCE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: ecommerce-secret
-              key: POSTGRES_PASSWORD
+          value: "pass"
         - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
           valueFrom:
             configMapKeyRef:
