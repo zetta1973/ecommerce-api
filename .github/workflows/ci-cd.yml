@@ -95,8 +95,8 @@ jobs:
     
     environment:
       name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
-      url: https://ecommerce.${{ github.ref_name == 'main' && 'prod' || 'staging' }}.tu-dominio.com
-    
+      # url: https://ecommerce.${{ github.ref_name == 'main' && 'prod' || 'staging' }}.tu-dominio.com  # Eliminado: no tenemos dominio
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -111,32 +111,18 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
           export KUBECONFIG=kubeconfig
 
-      - name: Update Kubernetes manifests
+      - name: Update Docker image tag
         run: |
           IMAGE_TAG=${{ github.sha }}
-          sed -i "s|ghcr.io/tu-usuario/ecommerce-api:latest|ghcr.io/${{ github.repository }}/ecommerce-api:${IMAGE_TAG}|g" k8s/deployment.yaml
-          
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            sed -i 's/SPRING_PROFILES_ACTIVE: "prod"/SPRING_PROFILES_ACTIVE: "prod"/g' k8s/deployment.yaml
-          else
-            sed -i 's/SPRING_PROFILES_ACTIVE: "prod"/SPRING_PROFILES_ACTIVE: "staging"/g' k8s/deployment.yaml
-          fi
+          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ghcr.io/${{ github.repository }}/ecommerce-api:${IMAGE_TAG}|g" k8s/deployment.yaml
 
       - name: Apply ConfigMap
         run: |
           kubectl apply -f k8s/configmap.yaml --kubeconfig=kubeconfig
 
-      - name: Apply Secrets
+      - name: Apply Deployment and Service
         run: |
-          if kubectl get secret ecommerce-secrets --kubeconfig=kubeconfig; then
-            echo "Secret already exists, skipping creation"
-          else
-            kubectl apply -f k8s/secrets-example.yaml --kubeconfig=kubeconfig
-          fi
-
-      - name: Apply Deployment
-        run: |
-          kubectl apply -f k8s/deployment.yaml --kubeconfig=kubeconfig
+          kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml --kubeconfig=kubeconfig
 
       - name: Wait for deployment to be ready
         run: |
@@ -145,7 +131,7 @@ jobs:
       - name: Verify deployment
         run: |
           kubectl get pods -l app=ecommerce-api --kubeconfig=kubeconfig
-          kubectl get svc ecommerce-api-service --kubeconfig=kubeconfig
+          kubectl get svc ecommerce-api --kubeconfig=kubeconfig
 
   notify:
     name: Notify Deployment Status
