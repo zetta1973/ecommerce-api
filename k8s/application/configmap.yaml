@@ -3,12 +3,12 @@ kind: ConfigMap
 metadata:
   name: ecommerce-config
   namespace: default
-
-SPRING_PROFILES_ACTIVE: "prod"
-LOG_LEVEL: "INFO"
-datasource-url: "jdbc:postgresql://postgres:5432/ecommerce"
-kafka-bootstrap-servers: "kafka:9092"
-spring-jpa-hibernate-ddl-auto: "update"
-spring-jpa-show-sql: "false"
-logging-level-root: "INFO"
-logging-level-com-ecommerce: "INFO"
+data:
+  LOG_LEVEL: "INFO"
+  SPRING_PROFILES_ACTIVE: "prod"
+  datasource-url: "jdbc:postgresql://postgres:5432/ecommerce"
+  kafka-bootstrap-servers: "kafka:9092"
+  spring-jpa-hibernate-ddl-auto: "update"
+  spring-jpa-show-sql: "false"
+  logging-level-root: "INFO"
+  logging-level-com-ecommerce: "INFO"
