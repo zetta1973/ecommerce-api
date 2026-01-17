@@ -14,30 +14,40 @@ spec:
         app: kafka
     spec:
       containers:
-      - name: redpanda
-        image: docker.redpanda.com/redpandadata/redpanda:v24.2.2
-        command:
-        - /usr/bin/redpanda
-        - start
-        - --smp=1
-        - --memory=512M
-        - --reserve-memory=0M
-        - --overprovisioned
-        - --node-id=0
-        - --check=false
-        - --kafka-addr=PLAINTEXT://0.0.0.0:9092
-        - --advertise-kafka-addr=PLAINTEXT://kafka:9092
+      - name: kafka
+        image: bitnami/kafka:3.7
+        env:
+        - name: KAFKA_CFG_NODE_ID
+          value: "0"
+        - name: KAFKA_CFG_PROCESS_ROLES
+          value: "controller,broker"
+        - name: KAFKA_CFG_LISTENERS
+          value: "PLAINTEXT://:9092"
+        - name: KAFKA_CFG_ADVERTISED_LISTENERS
+          value: "PLAINTEXT://kafka:9092"
+        - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "PLAINTEXT:PLAINTEXT"
+        - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
+          value: "0@localhost:9093"
+        - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
+          value: "CONTROLLER"
+        - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
+          value: "PLAINTEXT"
+        - name: KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_ENABLE_KRAFT
+          value: "yes"
         ports:
         - containerPort: 9092
         resources:
           requests:
             memory: "512Mi"
-            cpu: "100m"
-          limits:
-            memory: "768Mi"  # Redpanda necesita algo más de memoria
             cpu: "200m"
-        securityContext:
-          privileged: false
+          limits:
+            memory: "768Mi"
+            cpu: "400m"
 ---
 apiVersion: v1
 kind: Service
