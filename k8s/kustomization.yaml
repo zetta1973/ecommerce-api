@@ -1,21 +1,16 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 namespace: ecommerce
-
 resources:
   - deployment.yaml
   - configmap.yaml
   - postgres-service.yaml
-
 commonLabels:
   app: ecommerce-api
   managed-by: kustomize
-
 images:
   - name: ghcr.io/zetta1973/ecommerce-api
     newTag: latest
-
 replicas:
   - name: ecommerce-api
     count: 2

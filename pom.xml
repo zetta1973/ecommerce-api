@@ -3,13 +3,11 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ecommerce</groupId>
   <artifactId>ecommerce-api</artifactId>
   <version>1.0.7</version>
   <packaging>jar</packaging>
-
   <properties>
     <java.version>17</java.version>
     <spring-boot.version>3.1.2</spring-boot.version>
@@ -21,7 +19,6 @@
     <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
     <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
   </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -33,7 +30,6 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
   <dependencies>
     <!-- Spring Boot Starters -->
     <dependency>
@@ -48,35 +44,30 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
-
     <!-- PostgreSQL -->
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>${postgresql.version}</version>
     </dependency>
-
     <!-- H2 Database for testing -->
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
-
     <!-- Spring Kafka -->
     <dependency>
       <groupId>org.springframework.kafka</groupId>
       <artifactId>spring-kafka</artifactId>
       <version>${spring-kafka.version}</version>
     </dependency>
-
     <!-- SpringDoc OpenAPI -->
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
       <version>${springdoc.version}</version>
     </dependency>
-
     <!-- JJWT -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
@@ -95,7 +86,6 @@
       <version>${jjwt.version}</version>
       <scope>runtime</scope>
     </dependency>
-
     <!-- Lombok -->
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -103,14 +93,12 @@
       <version>${lombok.version}</version>
       <scope>provided</scope>
     </dependency>
-
     <!-- Logstash Logback Encoder -->
     <dependency>
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
       <version>${logstash-logback-encoder.version}</version>
     </dependency>
-
     <!-- Testing -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -122,7 +110,6 @@
       <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
-
     <!-- JaCoCo for code coverage -->
     <dependency>
       <groupId>org.jacoco</groupId>
@@ -132,7 +119,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
   <repositories>
     <repository>
       <id>central</id>
@@ -140,7 +126,6 @@
       <url>https://repo.maven.apache.org/maven2</url>
     </repository>
   </repositories>
-
   <build>
     <plugins>
       <!-- Compiler -->
@@ -154,7 +139,6 @@
           <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
-
       <!-- Spring Boot -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
@@ -168,7 +152,6 @@
           </execution>
         </executions>
       </plugin>
-
       <!-- Surefire -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -182,7 +165,6 @@
           </includes>
         </configuration>
       </plugin>
-
       <!-- JaCoCo -->
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -205,6 +187,5 @@
       </plugin>
     </plugins>
   </build>
-
 </project>
 
