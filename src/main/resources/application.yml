@@ -16,6 +16,8 @@ spring:
 
   kafka:
     bootstrap-servers: kafka:9092
+    properties:
+      schema.registry.url: http://kafka:8081
     consumer:
       group-id: ecommerce-group
       auto-offset-reset: earliest

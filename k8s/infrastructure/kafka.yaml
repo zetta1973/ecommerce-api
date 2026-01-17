@@ -14,41 +14,37 @@ spec:
         app: kafka
     spec:
       containers:
-      - name: kafka
-        image: confluentinc/cp-kafka:7.6.1
-        env:
-        - name: KAFKA_PROCESS_ROLES
-          value: "broker,controller"
-        - name: KAFKA_NODE_ID
-          value: "1"
-        - name: KAFKA_CONTROLLER_QUORUM_VOTERS
-          value: "1@localhost:9093"
-        - name: KAFKA_LISTENERS
-          value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
-        - name: KAFKA_ADVERTISED_LISTENERS
-          value: "PLAINTEXT://kafka:9092"
-        - name: KAFKA_CONTROLLER_LISTENER_NAMES
-          value: "CONTROLLER"
-        - name: KAFKA_INTER_BROKER_LISTENER_NAME
-          value: "PLAINTEXT"
-        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-          value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
-        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-          value: "1"
-        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
-          value: "1"
-        - name: KAFKA_KRAFT_MODE
-          value: "true"
+      - name: redpanda
+        image: docker.redpanda.com/redpandadata/redpanda:v24.2.2
+        command:
+        - redpanda
+        - start
+        - --smp
+        - "1"
+        - --reserve-memory
+        - "0M"
+        - --overprovisioned
+        - --node-id
+        - "0"
+        - --kafka-addr
+        - "PLAINTEXT://0.0.0.0:9092"
+        - --advertise-kafka-addr
+        - "PLAINTEXT://kafka:9092"
+        - --pandaproxy-addr
+        - "0.0.0.0:8082"
+        - --schema-registry-addr
+        - "0.0.0.0:8081"
         ports:
-        - containerPort: 9092
-        - containerPort: 9093
+        - containerPort: 9092  # Kafka
+        - containerPort: 8081  # Schema Registry
+        - containerPort: 8082  # HTTP Proxy
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "100m"
           limits:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: "512Mi"
+            cpu: "200m"
 ---
 apiVersion: v1
 kind: Service
@@ -64,6 +60,6 @@ spec:
       targetPort: 9092
       name: broker
     - protocol: TCP
-      port: 9093
-      targetPort: 9093
-      name: controller
+      port: 8081
+      targetPort: 8081
+      name: schema-registry
