@@ -47,6 +47,10 @@ jobs:
           cache: 'maven'
       - name: Build JAR
         run: mvn package -DskipTests
+      - name: Debug JAR file
+        run: |
+          ls -la target/
+          file target/*.jar || echo "No JAR file found"
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Set up Kind
@@ -97,6 +101,11 @@ jobs:
           kubectl apply --context kind-ecommerce -f k8s/application/configmap.yaml
           kubectl apply --context kind-ecommerce -f k8s/application/deployment.yaml
           kubectl apply --context kind-ecommerce -f k8s/application/service.yaml
+      - name: Debug application pod
+        run: |
+          kubectl get pods --context kind-ecommerce -l app=ecommerce-api
+          kubectl describe pod --context kind-ecommerce -l app=ecommerce-api
+          kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 || echo "No logs yet"
       - name: Wait for deployment to be ready
         run: kubectl rollout status --context kind-ecommerce deployment/ecommerce-api --timeout=5m
       - name: Verify deployment
