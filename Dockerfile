@@ -14,8 +14,15 @@ RUN mvn -q clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Copiamos el jar generado desde el build
-COPY --from=build /app/target/ecommerce-api-*.jar ecommerce-api.jar
+# Instalamos tzdata para evitar advertencias de zona horaria (opcional pero recomendado)
+RUN apk add --no-cache tzdata
 
+# Copiamos el JAR generado desde el build
+# Usamos un nombre fijo para evitar problemas si el nombre del JAR cambia
+COPY --from=build /app/target/*.jar app.jar
+
+# Exponemos el puerto estándar de Spring Boot
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "ecommerce-api.jar"]
+
+# Ejecutamos la aplicación
+ENTRYPOINT ["java", "-jar", "app.jar"]

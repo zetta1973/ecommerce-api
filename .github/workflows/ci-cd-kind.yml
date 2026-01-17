@@ -1,4 +1,5 @@
 name: CI/CD Pipeline with Kind
+
 on:
   push:
     branches:
@@ -9,59 +10,75 @@ on:
     branches:
       - main
       - develop
+
 jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
+
       - name: Run tests
         run: mvn test
+
       - name: Generate test coverage report
         run: mvn jacoco:report
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: target/site/jacoco/
+
   build-and-deploy-app:
     name: Build and Deploy Application to Kind
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.event_name == 'push'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
+
       - name: Build JAR
         run: mvn package -DskipTests
+
       - name: Debug JAR file
         run: |
           ls -la target/
           file target/*.jar || echo "No JAR file found"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Set up Kind
         run: |
           curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
+
       - name: Create Kind cluster
         run: kind create cluster --name ecommerce
+
       - name: Set kubectl context to Kind cluster
         run: kubectl config use-context kind-ecommerce
+
       - name: Deploy PostgreSQL and Kafka
         run: |
           kubectl apply --context kind-ecommerce -f k8s/infrastructure/postgres.yaml
@@ -77,7 +94,7 @@ jobs:
             sleep 5
           done
           
-          # Wait for Kafka (more tolerant, but don't block forever)
+          # Wait for Kafka (more tolerant)
           for i in {1..60}; do
             if kubectl get pod --context kind-ecommerce -l app=kafka --no-headers | grep -q "Running"; then
               echo "✅ Kafka is ready!"
@@ -87,33 +104,65 @@ jobs:
             sleep 5
           done
           
-          # Optional: show status if Kafka still not ready
           echo "ℹ️ Proceeding with deployment (Kafka may still be initializing in background)..."
+
       - name: Build Docker image
         run: docker build -t ecommerce-api:${{ github.sha }} .
+
       - name: Load image into Kind
         run: kind load docker-image ecommerce-api:${{ github.sha }} --name ecommerce
+
       - name: Update application manifests
         run: |
           sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-api:${{ github.sha }}|g" k8s/application/deployment.yaml
+
       - name: Apply application manifests
         run: |
           kubectl apply --context kind-ecommerce -f k8s/application/configmap.yaml
           kubectl apply --context kind-ecommerce -f k8s/application/deployment.yaml
           kubectl apply --context kind-ecommerce -f k8s/application/service.yaml
+
       - name: Debug application pod
         run: |
+          # Wait for pod to appear
+          for i in {1..30}; do
+            if kubectl get pod --context kind-ecommerce -l app=ecommerce-api --no-headers | grep -v "No resources found"; then
+              echo "✅ Application pod created!"
+              break
+            fi
+            echo "⏳ Waiting for application pod... ($i/30)"
+            sleep 5
+          done
+          
+          # Show pod status and logs
+          echo "📋 Pod status:"
           kubectl get pods --context kind-ecommerce -l app=ecommerce-api
+          echo "📋 Pod description:"
           kubectl describe pod --context kind-ecommerce -l app=ecommerce-api
-          kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 || echo "No logs yet"
-      - name: Wait for deployment to be ready
-        run: kubectl rollout status --context kind-ecommerce deployment/ecommerce-api --timeout=5m
-#      - name: Verify deployment
-#        run: |
-#          kubectl get pods --context kind-ecommerce -l app=ecommerce-api
-#          kubectl get svc --context kind-ecommerce ecommerce-api
-      - name: Test application endpoints
+          echo "📋 Application logs:"
+          kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 || echo "No logs available"
+
+      - name: Test application endpoints (tolerant)
         run: |
+          # Port-forward in background
           kubectl port-forward --context kind-ecommerce svc/ecommerce-api 8080:8080 &
-          sleep 20  # Más tiempo para que la app arranque
-          curl -f http://localhost:8080/actuator/health || echo "App not ready yet, but that's OK for now"
+          PF_PID=$!
+          
+          # Wait for app to start
+          echo "⏳ Waiting for application to fully start..."
+          sleep 30
+          
+          # Retry health check
+          for i in {1..10}; do
+            if curl -f http://localhost:8080/actuator/health; then
+              echo "✅ Application is responding!"
+              kill $PF_PID
+              exit 0
+            fi
+            echo "🔄 Retry $i/10..."
+            sleep 5
+          done
+          
+          echo "❌ Application did not respond after multiple attempts"
+          kill $PF_PID
+          exit 1
