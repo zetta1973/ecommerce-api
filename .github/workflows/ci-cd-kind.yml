@@ -176,8 +176,9 @@ jobs:
             
             if [ "$STATUS" = "Running" ] && [ "$READY" = "true" ]; then
               echo "✅ Pod is ready!"
-              # Give time for application logs to appear
-              sleep 15
+              # Show container status
+              echo "📋 Container status:"
+              kubectl get pod --context kind-ecommerce -l app=ecommerce-api -o jsonpath='{.items[0].status.containerStatuses[0]}' || true
               break
             fi
             
@@ -191,22 +192,46 @@ jobs:
             sleep 5
           done
 
+      - name: Show application logs and diagnose startup
+        run: |
+          echo "📋 Application logs (first 100 lines):"
+          kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 || true
+          
+          echo "📋 Check if Java process is running:"
+          POD_NAME=$(kubectl get pod --context kind-ecommerce -l app=ecommerce-api -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec --context kind-ecommerce $POD_NAME -- ps aux || true
+          
+          echo "📋 Check if port 8080 is listening:"
+          kubectl exec --context kind-ecommerce $POD_NAME -- netstat -tlnp 2>/dev/null || kubectl exec --context kind-ecommerce $POD_NAME -- ss -tlnp 2>/dev/null || echo "Cannot check listening ports"
+          
+          echo "📋 Test JVM from inside pod:"
+          kubectl exec --context kind-ecommerce $POD_NAME -- jps -l || echo "jps not available"
+
       - name: Wait for application to start
         run: |
           echo "⏳ Waiting for Spring Boot to start (Tomcat)..."
-          for i in {1..90}; do
-            if kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 | grep -q "Started Application"; then
+          for i in {1..120}; do
+            if kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=50 | grep -q "Started Application"; then
               echo "✅ Spring Boot application started!"
               break
             fi
             
-            if [ "$i" -eq 90 ]; then
-              echo "❌ Application did not start after 7.5 minutes"
-              kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=200
+            # Check if there are errors in logs
+            if kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=50 | grep -qi "error\|exception\|failed"; then
+              echo "❌ Application has errors, stopping wait"
+              kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100
               exit 1
             fi
             
-            echo "Waiting for application... ($i/90)"
+            if [ "$i" -eq 120 ]; then
+              echo "❌ Application did not start after 10 minutes"
+              echo "📋 Full logs:"
+              kubectl logs --context kind-ecommerce -l app=ecommerce-api
+              kubectl describe pod --context kind-ecommerce -l app=ecommerce-api
+              exit 1
+            fi
+            
+            echo "Waiting for application... ($i/120)"
             sleep 5
           done
 
