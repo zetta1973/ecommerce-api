@@ -31,6 +31,12 @@ logging:
 
 server:
   port: 8080
+  jetty:
+    threads:
+      min: 8
+      max: 200
+    acceptor-threads: 4
+    max-connections: 8192
 
 management:
   endpoints:
