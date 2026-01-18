@@ -102,9 +102,9 @@ jobs:
       - name: Load image into Kind
         run: kind load docker-image ecommerce-app:ci --name ecommerce
 
-      - name: Verify image exists in Kind
-        run: |
-          docker exec kind-ecommerce-control-plane crictl images | grep ecommerce-app || echo "Image not found in Kind"
+#      - name: Verify image exists in Kind
+#        run: |
+#          docker exec kind-ecommerce-control-plane crictl images | grep ecommerce-app || echo "Image not found in Kind"
 
       - name: Deploy PostgreSQL and Kafka
         run: |
