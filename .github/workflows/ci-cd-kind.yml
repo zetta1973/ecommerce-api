@@ -159,12 +159,41 @@ jobs:
           echo "📋 Why is it Pending?"
           kubectl describe pod --context kind-ecommerce -l app=ecommerce-api | grep -A5 -B5 "Events\|FailedScheduling"
 
+      - name: Wait for pod to be ready
+        run: |
+          echo "⏳ Waiting for pod to be ready..."
+          for i in {1..60}; do
+            STATUS=$(kubectl get pod --context kind-ecommerce -l app=ecommerce-api -o jsonpath='{.items[0].status.phase}')
+            READY=$(kubectl get pod --context kind-ecommerce -l app=ecommerce-api -o jsonpath='{.items[0].status.containerStatuses[0].ready}')
+            
+            echo "Pod status: $STATUS, Ready: $READY"
+            
+            if [ "$STATUS" = "Running" ] && [ "$READY" = "true" ]; then
+              echo "✅ Pod is ready!"
+              break
+            fi
+            
+            if [ "$i" -eq 60 ]; then
+              echo "❌ Pod did not become ready after 5 minutes"
+              kubectl describe pod --context kind-ecommerce -l app=ecommerce-api
+              kubectl logs --context kind-ecommerce -l app=ecommerce-api --all-containers=true || true
+              exit 1
+            fi
+            
+            sleep 5
+          done
+
+      - name: Show pod logs
+        run: |
+          echo "📋 Application logs:"
+          kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=50 || true
+
       - name: Test application endpoints (tolerant)
         run: |
           kubectl port-forward --context kind-ecommerce svc/ecommerce-api 8080:8080 &
           PF_PID=$!
           echo "⏳ Waiting for application to fully start..."
-          sleep 30
+          sleep 5
           for i in {1..10}; do
             if curl -f http://localhost:8080/actuator/health; then
               echo "✅ Application is responding!"
@@ -175,5 +204,6 @@ jobs:
             sleep 5
           done
           echo "❌ Application did not respond after multiple attempts"
+          kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 || true
           kill $PF_PID
           exit 1
