@@ -171,7 +171,7 @@ jobs:
             if [ "$STATUS" = "Running" ] && [ "$READY" = "true" ]; then
               echo "✅ Pod is ready!"
               # Give time for application logs to appear
-              sleep 10
+              sleep 15
               break
             fi
             
@@ -182,6 +182,25 @@ jobs:
               exit 1
             fi
             
+            sleep 5
+          done
+
+      - name: Wait for application to start
+        run: |
+          echo "⏳ Waiting for Spring Boot to start (Tomcat)..."
+          for i in {1..90}; do
+            if kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 | grep -q "Started Application"; then
+              echo "✅ Spring Boot application started!"
+              break
+            fi
+            
+            if [ "$i" -eq 90 ]; then
+              echo "❌ Application did not start after 7.5 minutes"
+              kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=200
+              exit 1
+            fi
+            
+            echo "Waiting for application... ($i/90)"
             sleep 5
           done
 
