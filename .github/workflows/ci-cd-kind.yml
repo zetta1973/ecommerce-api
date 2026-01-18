@@ -91,12 +91,19 @@ jobs:
           kubectl get nodes
 
       # 👇 Construcción y carga de la imagen (SOLO UNA VEZ)
-      - name: Build Docker image with local registry format
-        run: docker build -t localhost:5000/ecommerce-app:ci .
+      - name: Build Docker image with simple name
+        run: docker build -t ecommerce-app-ci .
 
       - name: Load image into Kind
-        run: kind load docker-image localhost:5000/ecommerce-app:ci --name ecommerce
+        run: kind load docker-image ecommerce-app-ci --name ecommerce
+      - name: Verify image loaded in Kind
+        run: |
+          # Verifica que la imagen esté disponible en el nodo de Kind
+          docker exec kind-ecommerce-control-plane crictl images | grep ecommerce-app-ci || echo "Image not found"
 
+      - name: Update application manifests
+        run: |
+          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-app-ci|g" k8s/application/deployment.yaml
       # 👇 VERIFICACIÓN DE LA IMAGEN EN KIND (aquí va el paso que pedías)
       - name: Verify image in Kind
         run: |
