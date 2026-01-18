@@ -18,6 +18,149 @@ This file contains guidelines and commands for agentic coding agents working in 
 - **Build Docker image**: `docker build -t ecommerce-api:1.0.x .`
 - **Run with Docker Compose**: `docker-compose up --build`
 
+## Git Commit & Push Guidelines
+
+### IMPORTANT: Always Ask for Permission
+**CRITICAL RULE**: Before executing ANY git commit or git push commands, you MUST ask the user for explicit permission:
+- "I've completed [task]. Would you like me to commit these changes?"
+- "Would you like me to push the commit to remote?"
+- Only proceed after receiving confirmation from the user
+
+### Commit Message Convention (Conventional Commits)
+
+Follow the Conventional Commits specification:
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+#### Commit Types
+- **feat**: New feature
+- **fix**: Bug fix
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, no logic change)
+- **refactor**: Code refactoring (neither bug fix nor feature)
+- **perf**: Performance improvements
+- **test**: Adding or updating tests
+- **build**: Build system or dependency changes
+- **ci**: CI/CD configuration changes
+- **chore**: Maintenance tasks
+
+#### Commit Scopes
+Common scopes for this project:
+- **k8s**: Kubernetes manifests
+- **ci**: GitHub Actions, CI/CD
+- **controller**: REST controllers
+- **service**: Service layer
+- **repository**: JPA repositories
+- **model**: JPA entities
+- **security**: Authentication/authorization
+- **kafka**: Kafka components
+- **config**: Configuration files
+
+#### Commit Message Guidelines
+- **Subject**: 50 characters max, imperative mood, no period at end
+- **Body**: Explain WHAT and WHY, not HOW
+- **Footer**: Breaking changes, issue references
+
+#### Examples
+```
+feat(auth): add JWT refresh token support
+
+Add refresh token endpoint to allow clients to obtain new access tokens
+without re-authenticating. Includes validation and security checks.
+
+Closes #123
+```
+
+```
+fix(k8s): resolve Kind image pull issues and namespace inconsistency
+
+- Change imagePullPolicy to IfNotPresent to use locally loaded images in Kind
+- Align namespace to default across all Kubernetes manifests for consistency
+- Remove redundant postgres-service.yaml reference
+
+This fixes deployment failures in CI pipeline where Kind cluster
+was trying to pull non-existent images from remote registry.
+```
+
+```
+ci: add pod readiness checks and enhanced debugging for Kind deployment
+
+- Add dedicated step to wait for pod readiness before testing
+- Show application logs before endpoint testing for better debugging
+- Reduce initial sleep time as readiness is now verified
+- Include full logs on test failure for troubleshooting
+```
+
+```
+refactor(service): extract user validation logic into separate class
+
+Extract validation logic from UserService into UserValidator to improve
+code organization and enable reuse across controllers.
+```
+
+### Git Commands Workflow
+
+#### 1. Check Status (Before Commit)
+```bash
+git status
+```
+
+#### 2. Review Changes
+```bash
+git diff              # Show unstaged changes
+git diff --staged      # Show staged changes
+```
+
+#### 3. Stage Changes
+```bash
+git add <file>              # Stage specific file
+git add .                    # Stage all changes
+git add *.yaml               # Stage all YAML files
+git add k8s/                 # Stage all files in k8s directory
+```
+
+#### 4. Create Commit (ASK PERMISSION FIRST!)
+```bash
+git commit -m "type(scope): subject
+
+body"
+```
+
+#### 5. Verify Commit
+```bash
+git log -1           # Show last commit
+git status           # Verify working tree is clean
+```
+
+#### 6. Push to Remote (ASK PERMISSION FIRST!)
+```bash
+git push                      # Push current branch to remote
+git push origin main          # Push main branch
+git push -u origin <branch>   # Push and set upstream
+```
+
+### Commit Process Checklist
+
+Before creating a commit, verify:
+1. ✅ Run tests: `./mvnw test`
+2. ✅ Build succeeds: `./mvnw clean package`
+3. ✅ Review changes with `git diff`
+4. ✅ Ensure all changed files are relevant
+5. ✅ Write clear commit message following conventions
+6. ⚠️ **ASK USER FOR PERMISSION to commit**
+
+Before pushing to remote:
+1. ✅ Commit message is correct and follows conventions
+2. ✅ No sensitive information in changes
+3. ✅ Tests pass locally
+4. ✅ Review commit with `git log -1`
+5. ⚠️ **ASK USER FOR PERMISSION to push**
+
 ## Code Style Guidelines
 
 ### Project Structure
