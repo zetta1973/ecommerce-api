@@ -1,7 +1,12 @@
 spring:
   main:
     lazy-initialization: true
-  datasource:
+    # Exclude Kafka and JPA auto-configuration for fastest startup
+    autoconfigure:
+      exclude:
+        - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+        - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
     url: jdbc:postgresql://postgres:5432/ecommerce
     username: user
     password: pass
