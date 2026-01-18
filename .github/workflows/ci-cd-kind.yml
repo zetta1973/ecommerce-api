@@ -85,25 +85,20 @@ jobs:
       - name: Set kubectl context to Kind cluster
         run: kubectl config use-context kind-ecommerce
 
-      - name: Verify Kind cluster is ready
-        run: |
-          kubectl cluster-info --context kind-ecommerce
-          kubectl get nodes
-
-      # 👇 Construcción y carga de la imagen (SOLO UNA VEZ)
-      - name: Build Docker image with explicit tag
-        run: docker build -t ecommerce-app:ci .
+      # 👇 USAMOS UN REGISTRY FALSO VÁLIDO 👇
+      - name: Build Docker image with fake registry
+        run: docker build -t fake.io/ecommerce-app:ci .
 
       - name: Load image into Kind
-        run: kind load docker-image ecommerce-app:ci --name ecommerce
+        run: kind load docker-image fake.io/ecommerce-app:ci --name ecommerce
 
       - name: Verify image loaded in Kind
         run: |
-          docker exec kind-ecommerce-control-plane crictl images | grep ecommerce-app || echo "Image not found"
+          docker exec kind-ecommerce-control-plane crictl images | grep fake.io || echo "Image not found"
 
       - name: Update application manifests
         run: |
-          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-app:ci|g" k8s/application/deployment.yaml
+          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|fake.io/ecommerce-app:ci|g" k8s/application/deployment.yaml
       # 👇 VERIFICACIÓN DE LA IMAGEN EN KIND (aquí va el paso que pedías)
       - name: Verify image in Kind
         run: |
