@@ -93,7 +93,10 @@ jobs:
 
       - name: Load image into Kind
         run: kind load docker-image ecommerce-api:${{ github.sha }} --name ecommerce
-
+      - name: Verify image exists in Kind
+        run: |
+          # List images in the Kind node
+          docker exec kind-ecommerce-control-plane crictl images | grep ecommerce-api || echo "Image not found in Kind"
       - name: Deploy PostgreSQL and Kafka
         run: |
           kubectl apply --context kind-ecommerce -f k8s/infrastructure/postgres.yaml
@@ -107,20 +110,18 @@ jobs:
             fi
             echo "⏳ Waiting for PostgreSQL... ($i/20)"
             sleep 3
-          done
-          
-          # Wait for Kafka (reduced timeout - let app handle connection retries)
-          for i in {1..15}; do
-            if kubectl get pod --context kind-ecommerce -l app=kafka --no-headers | grep -q "Running"; then
-              echo "✅ Kafka is ready!"
-              break
-            fi
-            echo "⏳ Waiting for Kafka... ($i/15)"
-            sleep 3
-          done
-          
-          echo "ℹ️ Proceeding with deployment..."
-
+          done   
+#          # Wait for Kafka (reduced timeout - let app handle connection retries)
+#          for i in {1..15}; do
+#            if kubectl get pod --context kind-ecommerce -l app=kafka --no-headers | grep -q "Running"; then
+#              echo "✅ Kafka is ready!"
+#              break
+#            fi
+#            echo "⏳ Waiting for Kafka... ($i/15)"
+#            sleep 3
+#          done
+#          
+#          echo "ℹ️ Proceeding with deployment..."
       - name: Update application manifests
         run: |
           sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-api:${{ github.sha }}|g" k8s/application/deployment.yaml
