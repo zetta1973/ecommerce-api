@@ -149,7 +149,13 @@ jobs:
           kubectl get pods --context kind-ecommerce -l app=ecommerce-api
           echo "📋 Application logs (last 50 lines):"
           kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=50 || echo "No logs available"
-
+      - name: Diagnose Pending pod
+        run: |
+          echo "🔍 Pod status:"
+          kubectl get pods --context kind-ecommerce -l app=ecommerce-api
+          
+          echo "📋 Why is it Pending?"
+          kubectl describe pod --context kind-ecommerce -l app=ecommerce-api | grep -A5 -B5 "Events\|FailedScheduling"
       - name: Test application endpoints (tolerant)
         run: |
           # Port-forward in background
