@@ -16,7 +16,7 @@ public class KafkaConsumer {
         this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = "order.created", groupId = "ecommerce-group", autoStartup = "true")
+    @KafkaListener(topics = "order.created", groupId = "ecommerce-group", autoStartup = "false")
     public void handleOrderCreated(String eventJson) {
         try {
             OrderCreatedEvent event = objectMapper.readValue(eventJson, OrderCreatedEvent.class);

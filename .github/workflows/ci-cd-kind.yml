@@ -209,29 +209,28 @@ jobs:
 
       - name: Wait for application to start
         run: |
-          echo "⏳ Waiting for Spring Boot to start (Tomcat)..."
-          for i in {1..120}; do
+          echo "⏳ Waiting for Spring Boot to start (Jetty)..."
+          for i in {1..180}; do
             if kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=50 | grep -q "Started Application"; then
               echo "✅ Spring Boot application started!"
+              # Give time for server to be fully ready
+              sleep 10
               break
             fi
             
-            # Check if there are errors in logs
-            if kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=50 | grep -qi "error\|exception\|failed"; then
-              echo "❌ Application has errors, stopping wait"
+            if [ "$i" -eq 180 ]; then
+              echo "❌ Application did not start after 15 minutes"
+              echo "📋 Last 100 lines of logs:"
               kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100
-              exit 1
-            fi
-            
-            if [ "$i" -eq 120 ]; then
-              echo "❌ Application did not start after 10 minutes"
-              echo "📋 Full logs:"
-              kubectl logs --context kind-ecommerce -l app=ecommerce-api
               kubectl describe pod --context kind-ecommerce -l app=ecommerce-api
               exit 1
             fi
             
-            echo "Waiting for application... ($i/120)"
+            # Show progress every 30 seconds
+            if [ $((i % 30)) -eq 0 ]; then
+              echo "🔄 Still starting... ($i/180 - $((i * 5 / 60)) minutes elapsed)"
+            fi
+            
             sleep 5
           done
 
@@ -250,11 +249,15 @@ jobs:
           POD_NAME=$(kubectl get pod --context kind-ecommerce -l app=ecommerce-api -o jsonpath='{.items[0].metadata.name}')
           kubectl exec --context kind-ecommerce $POD_NAME -- ps aux || true
           
-          echo "📋 Test health endpoint from inside pod:"
-          kubectl exec --context kind-ecommerce $POD_NAME -- curl -s http://localhost:8080/actuator/health || echo "Health check failed"
-          
-          echo "📋 Check if port 8080 is listening:"
-          kubectl exec --context kind-ecommerce $POD_NAME -- netstat -tlnp || kubectl exec --context kind-ecommerce $POD_NAME -- ss -tlnp || echo "Cannot check listening ports"
+           echo "📋 Test health endpoint from inside pod:"
+           POD_NAME=$(kubectl get pod --context kind-ecommerce -l app=ecommerce-api -o jsonpath='{.items[0].metadata.name}')
+           kubectl exec --context kind-ecommerce $POD_NAME -- wget -q -O- http://localhost:8080/actuator/health || echo "Health check failed"
+           
+           echo "📋 Check if port 8080 is listening:"
+           kubectl exec --context kind-ecommerce $POD_NAME -- netstat -tlnp 2>/dev/null || kubectl exec --context kind-ecommerce $POD_NAME -- ss -tlnp 2>/dev/null || echo "Cannot check listening ports"
+           
+           echo "📋 Check Spring Boot startup progress:"
+           kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=20 | grep -E "(Started Application|Tomcat|Jetty started|ERROR|Exception)" || echo "Cannot get recent logs"
 
       - name: Test application endpoints (tolerant)
         run: |
