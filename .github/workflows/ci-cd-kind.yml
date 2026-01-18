@@ -183,10 +183,19 @@ jobs:
             sleep 5
           done
 
-      - name: Show pod logs
+      - name: Show pod logs and verify container state
         run: |
+          echo "📋 Pod details:"
+          kubectl get pod --context kind-ecommerce -l app=ecommerce-api -o jsonpath='{.items[0].status.containerStatuses[0]}' | jq . || true
+          
           echo "📋 Application logs:"
-          kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=50 || true
+          kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=100 || true
+          
+          echo "📋 Previous container logs (if container restarted):"
+          kubectl logs --context kind-ecommerce -l app=ecommerce-api --previous --tail=50 || true
+          
+          echo "📋 Processes running in container:"
+          kubectl exec --context kind-ecommerce -l app=ecommerce-api -- ps aux || true
 
       - name: Test application endpoints (tolerant)
         run: |
