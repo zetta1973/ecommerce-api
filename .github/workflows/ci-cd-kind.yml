@@ -110,10 +110,9 @@ jobs:
             echo "Kind control plane container not found"
           fi
 
-      - name: Deploy PostgreSQL, Zookeeper and Kafka
+      - name: Deploy PostgreSQL, Kafka and Schema Registry
         run: |
           kubectl apply --context kind-ecommerce -f k8s/infrastructure/postgres.yaml
-          kubectl apply --context kind-ecommerce -f k8s/infrastructure/zookeeper.yaml
           kubectl apply --context kind-ecommerce -f k8s/infrastructure/kafka.yaml
           
           # Wait for PostgreSQL (critical dependency)
@@ -126,17 +125,7 @@ jobs:
             sleep 3
           done
 
-          # Wait for Zookeeper (Kafka dependency)
-          for i in {1..30}; do
-            if kubectl get pod --context kind-ecommerce -l app=kafka-zookeeper --no-headers | grep -q "Running"; then
-              echo "✅ Zookeeper is ready!"
-              break
-            fi
-            echo "⏳ Waiting for Zookeeper... ($i/30)"
-            sleep 2
-          done
-
-          # Wait for Kafka (let app handle connection retries)
+          # Wait for Kafka (uses KRAFT mode, no Zookeeper needed)
           for i in {1..30}; do
             if kubectl get pod --context kind-ecommerce -l app=kafka --no-headers | grep -q "Running"; then
               echo "✅ Kafka is ready!"
