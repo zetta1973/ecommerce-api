@@ -16,6 +16,11 @@ spring:
   kafka:
     bootstrap-servers: kafka:9092
     consumer:
+      auto-offset-reset: earliest
+    listener:
+      ack-mode: manual
+    properties:
+      session.timeout.ms: 10000
       group-id: ecommerce-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
