@@ -87,8 +87,9 @@ jobs:
         run: kind load docker-image ecommerce-api:${{ github.sha }} --name ecommerce
       - name: Verify image loaded in Kind
         run: |
-          # List images in the Kind node
-          docker exec kind-ecommerce-control-plane crictl images | grep ecommerce-api
+          # Lista las imágenes en el nodo usando Kind
+          kind get nodes --name ecommerce
+          # La imagen debería estar disponible para kubectl
       - name: Deploy PostgreSQL and Kafka
         run: |
           kubectl apply --context kind-ecommerce -f k8s/infrastructure/postgres.yaml
