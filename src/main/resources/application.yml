@@ -1,4 +1,6 @@
 spring:
+  main:
+    lazy-initialization: true
   datasource:
     url: jdbc:postgresql://postgres:5432/ecommerce
     username: user
@@ -24,9 +26,8 @@ spring:
 
 logging:
   level:
-    root: INFO
-    com.ecommerce: DEBUG
-    org.springframework.boot: INFO
+    root: WARN
+    com.ecommerce: INFO
 
 server:
   port: 8080
