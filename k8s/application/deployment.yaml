@@ -23,16 +23,6 @@ spec:
         - containerPort: 8080
           name: http
         env:
-        - name: SPRING_PROFILES_ACTIVE
-          valueFrom:
-            configMapKeyRef:
-              name: ecommerce-config
-              key: SPRING_PROFILES_ACTIVE
-        - name: LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: ecommerce-config
-              key: LOG_LEVEL
         - name: SPRING_DATASOURCE_URL
           valueFrom:
             configMapKeyRef:
