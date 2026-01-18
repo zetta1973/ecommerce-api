@@ -67,24 +67,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 👇 USAMOS UN NOMBRE FIJO PARA EVITAR PROBLEMAS DE TAGS 👇
-      - name: Build Docker image
-        run: docker build -t ghcr.io/${{ github.repository }}/ecommerce-api:${{ github.sha }} .
-
-      - name: Load image into Kind
-        run: kind load docker-image ghcr.io/${{ github.repository }}/ecommerce-api:${{ github.sha }} --name ecommerce
-
-      - name: Update application manifests
-        run: |
-          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ghcr.io/${{ github.repository }}/ecommerce-api:${{ github.sha }}|g" k8s/application/deployment.yaml
-      - name: Verify Docker image exists
-        run: |
-          docker images | grep ecommerce-app
-          docker inspect ecommerce-app:ci
-
+      # 👇 PRIMERO configuramos Kind, luego construimos y cargamos la imagen
       - name: Set up Kind
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
 
@@ -93,18 +79,27 @@ jobs:
           kind delete cluster --name ecommerce || true
 
       - name: Create Kind cluster
-        run: kind create cluster --name ecommerce
+        run: |
+          kind create cluster --name ecommerce --wait 2m
+
+      - name: Verify Kind cluster is ready
+        run: |
+          kubectl cluster-info --context kind-ecommerce
+          kubectl get nodes
 
       - name: Set kubectl context to Kind cluster
         run: kubectl config use-context kind-ecommerce
 
-      # 👇 CARGAMOS LA IMAGEN CON NOMBRE FIJO 👇
+      # 👇 AHORA construimos y cargamos la imagen en el cluster existente
+      - name: Build Docker image
+        run: docker build -t ecommerce-app:ci .
+
       - name: Load image into Kind
         run: kind load docker-image ecommerce-app:ci --name ecommerce
 
-#      - name: Verify image exists in Kind
-#        run: |
-#          docker exec kind-ecommerce-control-plane crictl images | grep ecommerce-app || echo "Image not found in Kind"
+      - name: Update application manifests
+        run: |
+          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-app:ci|g" k8s/application/deployment.yaml
 
       - name: Deploy PostgreSQL and Kafka
         run: |
@@ -121,10 +116,9 @@ jobs:
             sleep 3
           done
 
-      # 👇 ACTUALIZAMOS EL DEPLOYMENT CON EL NOMBRE FIJO 👇
-      - name: Update application manifests
-        run: |
-          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-app:ci|g" k8s/application/deployment.yaml
+          # Wait briefly for Kafka (let app handle connection retries)
+          echo "⏳ Deploying Kafka (app will handle connection retries)..."
+          sleep 10
 
       - name: Apply application manifests
         run: |
@@ -135,13 +129,13 @@ jobs:
       - name: Debug application pod
         run: |
           # Wait for pod to appear
-          for i in {1..20}; do
+          for i in {1..25}; do
             if kubectl get pod --context kind-ecommerce -l app=ecommerce-api --no-headers | grep -v "No resources found"; then
               echo "✅ Application pod created!"
               break
             fi
-            echo "⏳ Waiting for application pod... ($i/20)"
-            sleep 3
+            echo "⏳ Waiting for application pod... ($i/25)"
+            sleep 2
           done
           
           echo "📋 Pod status:"
@@ -161,15 +155,15 @@ jobs:
           kubectl port-forward --context kind-ecommerce svc/ecommerce-api 8080:8080 &
           PF_PID=$!
           echo "⏳ Waiting for application to fully start..."
-          sleep 25
-          for i in {1..8}; do
+          sleep 30
+          for i in {1..10}; do
             if curl -f http://localhost:8080/actuator/health; then
               echo "✅ Application is responding!"
               kill $PF_PID
               exit 0
             fi
-            echo "🔄 Retry $i/8..."
-            sleep 4
+            echo "🔄 Retry $i/10..."
+            sleep 5
           done
           echo "❌ Application did not respond after multiple attempts"
           kill $PF_PID
