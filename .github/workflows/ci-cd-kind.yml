@@ -170,6 +170,8 @@ jobs:
             
             if [ "$STATUS" = "Running" ] && [ "$READY" = "true" ]; then
               echo "✅ Pod is ready!"
+              # Give time for application logs to appear
+              sleep 10
               break
             fi
             
@@ -195,7 +197,14 @@ jobs:
           kubectl logs --context kind-ecommerce -l app=ecommerce-api --previous --tail=50 || true
           
           echo "📋 Processes running in container:"
-          kubectl exec --context kind-ecommerce -l app=ecommerce-api -- ps aux || true
+          POD_NAME=$(kubectl get pod --context kind-ecommerce -l app=ecommerce-api -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec --context kind-ecommerce $POD_NAME -- ps aux || true
+          
+          echo "📋 Test health endpoint from inside pod:"
+          kubectl exec --context kind-ecommerce $POD_NAME -- curl -s http://localhost:8080/actuator/health || echo "Health check failed"
+          
+          echo "📋 Check if port 8080 is listening:"
+          kubectl exec --context kind-ecommerce $POD_NAME -- netstat -tlnp || kubectl exec --context kind-ecommerce $POD_NAME -- ss -tlnp || echo "Cannot check listening ports"
 
       - name: Test application endpoints (tolerant)
         run: |
