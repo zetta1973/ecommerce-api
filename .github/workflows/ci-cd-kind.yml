@@ -67,7 +67,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 👇 PRIMERO configuramos Kind, luego construimos y cargamos la imagen
+      # 👇 Configuración y creación del cluster Kind
       - name: Set up Kind
         run: |
           curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
@@ -82,24 +82,35 @@ jobs:
         run: |
           kind create cluster --name ecommerce --wait 2m
 
+      - name: Set kubectl context to Kind cluster
+        run: kubectl config use-context kind-ecommerce
+
       - name: Verify Kind cluster is ready
         run: |
           kubectl cluster-info --context kind-ecommerce
           kubectl get nodes
 
-      - name: Set kubectl context to Kind cluster
-        run: kubectl config use-context kind-ecommerce
-
-      # 👇 AHORA construimos y cargamos la imagen en el cluster existente
-      - name: Build Docker image
-        run: docker build -t ecommerce-app:ci .
+      # 👇 Construcción y carga de la imagen (SOLO UNA VEZ)
+      - name: Build Docker image with local registry format
+        run: docker build -t localhost:5000/ecommerce-app:ci .
 
       - name: Load image into Kind
-        run: kind load docker-image ecommerce-app:ci --name ecommerce
+        run: kind load docker-image localhost:5000/ecommerce-app:ci --name ecommerce
+
+      # 👇 VERIFICACIÓN DE LA IMAGEN EN KIND (aquí va el paso que pedías)
+      - name: Verify image in Kind
+        run: |
+          # List images in Kind node
+          CONTAINER_ID=$(docker ps -f name=kind-ecommerce-control-plane -q)
+          if [ -n "$CONTAINER_ID" ]; then
+            docker exec $CONTAINER_ID crictl images | grep ecommerce-app || echo "Image not found in Kind node"
+          else
+            echo "Kind control plane container not found"
+          fi
 
       - name: Update application manifests
         run: |
-          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-app:ci|g" k8s/application/deployment.yaml
+          sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|localhost:5000/ecommerce-app:ci|g" k8s/application/deployment.yaml
 
       - name: Deploy PostgreSQL and Kafka
         run: |
