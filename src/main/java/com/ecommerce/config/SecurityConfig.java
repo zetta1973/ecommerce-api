@@ -26,11 +26,11 @@ public class SecurityConfig {
 
         http.csrf(cs -> cs.disable())
             .authorizeHttpRequests(auth -> auth
+                // Health check endpoints for Kubernetes probes - permit all actuator endpoints
+                .requestMatchers("/actuator/**").permitAll()
+
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/admin/ping").permitAll()
-
-                // Health check endpoints for Kubernetes probes
-                .requestMatchers("/actuator/health/**").permitAll()
 
                 // === abierto para tus tests ===
                 .requestMatchers("/products").permitAll()
