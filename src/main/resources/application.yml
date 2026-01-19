@@ -57,12 +57,12 @@ logging:
 
 server:
   port: 8080
-  jetty:
+  undertow:
     threads:
-      min: 8
-      max: 200
-    acceptor-threads: 4
-    max-connections: 8192
+      io: 8
+      worker: 64
+    buffer-size: 1024
+    direct-buffers: true
 
 management:
   endpoints:

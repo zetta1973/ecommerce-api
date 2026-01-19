@@ -103,7 +103,40 @@ jobs:
 
           # Deploy application
           kubectl apply -f k8s/application/
-          kubectl wait --for=condition=ready pod -l app=ecommerce-api --timeout=300s
+
+          # Debug: Check if pod was created
+          echo "Checking pod creation..."
+          kubectl get pods -l app=ecommerce-api
+
+          # Debug: Check pod status immediately
+          echo "Pod status after apply:"
+          kubectl describe pod -l app=ecommerce-api
+
+          # Wait for pod to be ready with more verbose output
+          echo "Waiting for pod to be ready..."
+          if ! kubectl wait --for=condition=ready pod -l app=ecommerce-api --timeout=300s; then
+            echo "❌ Pod failed to become ready. Gathering diagnostic information..."
+
+            # Show pod status
+            kubectl get pods -l app=ecommerce-api -o wide
+
+            # Show detailed pod description
+            kubectl describe pod -l app=ecommerce-api
+
+            # Show pod logs (if any)
+            echo "Pod logs:"
+            kubectl logs -l app=ecommerce-api --tail=200 || echo "No logs available"
+
+            # Check if container is running
+            echo "Container status:"
+            kubectl get pod -l app=ecommerce-api -o jsonpath='{.items[0].status.containerStatuses[0]}' | jq . 2>/dev/null || echo "Cannot get container status"
+
+            # Check events
+            echo "Recent events:"
+            kubectl get events --sort-by=.metadata.creationTimestamp | tail -20
+
+            exit 1
+          fi
 
       - name: Test application
         run: |
