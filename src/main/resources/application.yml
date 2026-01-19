@@ -1,12 +1,5 @@
 spring:
-  main:
-    lazy-initialization: true
-    # Exclude Kafka and JPA auto-configuration for fastest startup
-    autoconfigure:
-      exclude:
-        - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-        - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
-
+  datasource:
     url: jdbc:postgresql://postgres:5432/ecommerce
     username: user
     password: pass
@@ -28,6 +21,34 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+---
+spring:
+  config:
+    activate:
+      on-profile: ci
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true
+
+  kafka:
+    bootstrap-servers: localhost:1234
+    consumer:
+      enabled: false
+    producer:
+      enabled: false
+
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
 
 logging:
   level:

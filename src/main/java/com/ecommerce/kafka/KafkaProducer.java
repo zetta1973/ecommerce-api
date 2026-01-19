@@ -2,11 +2,13 @@ package com.ecommerce.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@ConditionalOnProperty(value = "spring.kafka.producer.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class KafkaProducer {
 

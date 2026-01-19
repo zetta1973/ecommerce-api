@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,9 +22,9 @@ public class OrderService {
 
     private final OrderRepository orderRepo;
     private final ProductRepository productRepo;
-    private final KafkaProducer kafkaProducer;
+    private final Optional<KafkaProducer> kafkaProducer;
 
-    public OrderService(OrderRepository orderRepo, ProductRepository productRepo, KafkaProducer kafkaProducer) {
+    public OrderService(OrderRepository orderRepo, ProductRepository productRepo, Optional<KafkaProducer> kafkaProducer) {
         this.orderRepo = orderRepo;
         this.productRepo = productRepo;
         this.kafkaProducer = kafkaProducer;
@@ -55,15 +56,17 @@ public class OrderService {
         // Guardar la orden
         Order saved = orderRepo.save(order);
 
-        // Enviar evento completo a Kafka
-        OrderCreatedEvent event = new OrderCreatedEvent();
-        event.setOrderId(saved.getId());
-        event.setUserId(user.getId());
-        event.setTotal(saved.getTotal());
-        event.setTimestamp(System.currentTimeMillis());
-        event.setStatus(saved.getStatus());
+        // Enviar evento completo a Kafka (si está disponible)
+        kafkaProducer.ifPresent(producer -> {
+            OrderCreatedEvent event = new OrderCreatedEvent();
+            event.setOrderId(saved.getId());
+            event.setUserId(user.getId());
+            event.setTotal(saved.getTotal());
+            event.setTimestamp(System.currentTimeMillis());
+            event.setStatus(saved.getStatus());
 
-        kafkaProducer.publishOrderCreated(event);
+            producer.publishOrderCreated(event);
+        });
 
         return mapToDto(saved);
     }
