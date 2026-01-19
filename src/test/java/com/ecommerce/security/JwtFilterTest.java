@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +48,7 @@ class JwtFilterTest {
     @Test
     void shouldNotSetAuthenticationWhenNoAuthHeader() throws Exception {
         when(request.getHeader("Authorization")).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/test");
 
         jwtFilter.doFilterInternal(request, response, filterChain);
 
@@ -57,6 +59,7 @@ class JwtFilterTest {
     @Test
     void shouldNotSetAuthenticationWhenInvalidAuthHeaderFormat() throws Exception {
         when(request.getHeader("Authorization")).thenReturn("InvalidFormat");
+        when(request.getRequestURI()).thenReturn("/api/test");
 
         jwtFilter.doFilterInternal(request, response, filterChain);
 
@@ -80,5 +83,17 @@ class JwtFilterTest {
         JwtUtil mockJwtUtil = mock(JwtUtil.class);
         JwtFilter filter = new JwtFilter(mockRepo);
         assertThat(filter).isNotNull();
+    }
+
+    @Test
+    void shouldBypassJwtValidationForHealthEndpoints() throws Exception {
+        when(request.getRequestURI()).thenReturn("/actuator/health/liveness");
+
+        jwtFilter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        // Should not attempt to get Authorization header for health endpoints
+        verify(request, never()).getHeader("Authorization");
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }
