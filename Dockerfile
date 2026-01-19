@@ -4,7 +4,7 @@ FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
 # Copy JAR (built locally for CI speed)
-COPY target/*.jar app.jar
+COPY target/ecommerce-api-*.jar app.jar
 
 EXPOSE 8080
 
