@@ -1,28 +1,29 @@
-# ----- STAGE 1: Build -----
+# Multi-stage build for Spring Boot with Undertow
 FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /app
 
-# Copiamos solo los archivos necesarios para cachear dependencias
+WORKDIR /app
 COPY pom.xml .
-RUN mvn -q dependency:go-offline
+RUN mvn dependency:go-offline -B
 
-# Copiamos el código y construimos
 COPY src ./src
-RUN mvn -q clean package -DskipTests
+RUN mvn clean package -DskipTests -B
 
-# ----- STAGE 2: Run -----
-FROM eclipse-temurin:17-jre-alpine
+# Production stage
+FROM eclipse-temurin:17-jre-jammy
+
 WORKDIR /app
 
-# Instalamos tzdata para evitar advertencias de zona horaria (opcional pero recomendado)
-RUN apk add --no-cache tzdata
+# Add health check
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copiamos el JAR generado desde el build
-# Usamos un nombre fijo para evitar problemas si el nombre del JAR cambia
+# Copy JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Exponemos el puerto estándar de Spring Boot
+# Health check for Docker
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
 EXPOSE 8080
 
-# Ejecutamos la aplicación
+# Use exec form for proper signal handling
 ENTRYPOINT ["java", "-jar", "app.jar"]

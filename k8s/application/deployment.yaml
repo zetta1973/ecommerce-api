@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ecommerce-api
-  namespace: default
   labels:
     app: ecommerce-api
 spec:
@@ -17,7 +16,7 @@ spec:
     spec:
       containers:
       - name: ecommerce-api
-        image: ghcr.io/zetta1973/ecommerce-api:latest
+        image: ecommerce-api:ci
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -25,20 +24,8 @@ spec:
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "ci"
-        - name: SPRING_DATASOURCE_URL
-          value: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
-        - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-          value: "org.h2.Driver"
-        - name: SPRING_DATASOURCE_USERNAME
-          value: "sa"
-        - name: SPRING_DATASOURCE_PASSWORD
-          value: ""
-        - name: SPRING_KAFKA_CONSUMER_ENABLED
-          value: "false"
-        - name: SPRING_KAFKA_PRODUCER_ENABLED
-          value: "false"
-        - name: SPRING_AUTOCONFIGURE_EXCLUDE
-          value: "org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration"
+        - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+          value: "health"
         resources:
           requests:
             memory: "256Mi"
@@ -48,17 +35,13 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /actuator/health/liveness
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 15
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
