@@ -30,6 +30,13 @@ public class JwtFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        // Allow health check endpoints to pass through without JWT validation
+        String requestURI = request.getRequestURI();
+        if (requestURI.startsWith("/actuator/health/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
