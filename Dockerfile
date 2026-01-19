@@ -1,5 +1,5 @@
 # Simple single-stage build for Spring Boot
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
