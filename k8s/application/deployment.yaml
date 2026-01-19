@@ -21,11 +21,9 @@ spec:
         ports:
         - containerPort: 8080
           name: http
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "ci"
-        - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
-          value: "health"
+         env:
+         - name: SPRING_PROFILES_ACTIVE
+           value: "ci"
          resources:
            requests:
              memory: "256Mi"
