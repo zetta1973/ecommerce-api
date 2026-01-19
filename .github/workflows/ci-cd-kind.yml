@@ -98,8 +98,11 @@ jobs:
           docker build -t ecommerce-api:ci .
           kind load docker-image ecommerce-api:ci --name ecommerce
 
-          # Deploy application using Kustomize
-          kubectl apply -k k8s/application/
+          # Update deployment image reference
+          sed -i 's|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-api:ci|g' k8s/application/deployment.yaml
+
+          # Deploy application
+          kubectl apply -f k8s/application/
           kubectl wait --for=condition=ready pod -l app=ecommerce-api --timeout=300s
 
       - name: Test application
