@@ -99,43 +99,11 @@ jobs:
       - name: Update application manifests
         run: |
           sed -i "s|ghcr.io/zetta1973/ecommerce-api:latest|fake.io/ecommerce-app:ci|g" k8s/application/deployment.yaml
-      # 👇 VERIFICACIÓN DE LA IMAGEN EN KIND (aquí va el paso que pedías)
-      - name: Verify image in Kind
-        run: |
-          # List images in Kind node
-          CONTAINER_ID=$(docker ps -f name=kind-ecommerce-control-plane -q)
-          if [ -n "$CONTAINER_ID" ]; then
-            docker exec $CONTAINER_ID crictl images | grep ecommerce-app || echo "Image not found in Kind node"
-          else
-            echo "Kind control plane container not found"
-          fi
 
-      - name: Deploy PostgreSQL, Kafka and Schema Registry
-        run: |
-          kubectl apply --context kind-ecommerce -f k8s/infrastructure/postgres.yaml
-          kubectl apply --context kind-ecommerce -f k8s/infrastructure/kafka.yaml
-          
-          # Wait for PostgreSQL (critical dependency)
-          for i in {1..20}; do
-            if kubectl get pod --context kind-ecommerce -l app=postgres --no-headers | grep -q "Running"; then
-              echo "✅ PostgreSQL is ready!"
-              break
-            fi
-            echo "⏳ Waiting for PostgreSQL... ($i/20)"
-            sleep 3
-          done
+      # 👇 PARA CI: NO DESPLEGAMOS INFRAESTRUCTURA (PostgreSQL/Kafka)
+      # La aplicación usa H2 database embebida y Kafka deshabilitado
 
-          # Wait for Kafka (uses KRAFT mode, no Zookeeper needed)
-          for i in {1..30}; do
-            if kubectl get pod --context kind-ecommerce -l app=kafka --no-headers | grep -q "Running"; then
-              echo "✅ Kafka is ready!"
-              break
-            fi
-            echo "⏳ Waiting for Kafka... ($i/30)"
-            sleep 2
-          done
-
-      - name: Apply application manifests
+      - name: Apply application manifests (CI profile - no infrastructure needed)
         run: |
           kubectl apply --context kind-ecommerce -f k8s/application/configmap.yaml
           kubectl apply --context kind-ecommerce -f k8s/application/deployment.yaml
@@ -209,7 +177,7 @@ jobs:
 
       - name: Wait for application to start
         run: |
-          echo "⏳ Waiting for Spring Boot to start (Jetty)..."
+          echo "⏳ Waiting for Spring Boot to start (Tomcat)..."
           for i in {1..180}; do
             if kubectl logs --context kind-ecommerce -l app=ecommerce-api --tail=50 | grep -q "Started Application"; then
               echo "✅ Spring Boot application started!"

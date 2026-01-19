@@ -37,28 +37,28 @@ spec:
           value: "false"
         - name: SPRING_KAFKA_PRODUCER_ENABLED
           value: "false"
-        - name: SPRING_AUTOCONFIGURE_EXCLUDE
-          value: "org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration"
+         - name: SPRING_AUTOCONFIGURE_EXCLUDE
+           value: "org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration"
         resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
+           requests:
+             memory: "256Mi"
+             cpu: "100m"
+           limits:
+             memory: "512Mi"
+             cpu: "500m"
+         livenessProbe:
+           httpGet:
+             path: /actuator/health/liveness
+             port: 8080
+           initialDelaySeconds: 30
+           periodSeconds: 10
+           timeoutSeconds: 5
+           failureThreshold: 3
+         readinessProbe:
+           httpGet:
+             path: /actuator/health/readiness
+             port: 8080
+           initialDelaySeconds: 15
+           periodSeconds: 5
+           timeoutSeconds: 3
+           failureThreshold: 3

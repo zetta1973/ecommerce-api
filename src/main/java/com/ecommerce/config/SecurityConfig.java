@@ -29,6 +29,9 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/admin/ping").permitAll()
 
+                // Health check endpoints for Kubernetes probes
+                .requestMatchers("/actuator/health/**").permitAll()
+
                 // === abierto para tus tests ===
                 .requestMatchers("/products").permitAll()
 
