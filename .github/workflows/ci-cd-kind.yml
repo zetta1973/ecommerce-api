@@ -57,86 +57,60 @@ jobs:
           cache: 'maven'
 
       - name: Build JAR
-        run: mvn package -DskipTests
+        run: mvn clean package -DskipTests
 
-      - name: Build and load Docker image into Kind
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:master
-            network=host
+      - name: Verify JAR exists
+        run: ls -la target/*.jar
 
-      - name: Create Kind cluster and deploy
+      - name: Create Kind cluster and test locally
         run: |
           # Install Kind
           curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
 
-          # Create cluster
-          kind create cluster --name ecommerce --config - <<EOF
-          kind: Cluster
-          apiVersion: kind.x-k8s.io/v1alpha4
-          nodes:
-          - role: control-plane
-            kubeadmConfigPatches:
-            - |
-              kind: InitConfiguration
-              nodeRegistration:
-                kubeletExtraArgs:
-                  node-labels: "ingress-ready=true"
-            extraPortMappings:
-            - containerPort: 80
-              hostPort: 80
-              protocol: TCP
-            - containerPort: 443
-              hostPort: 443
-              protocol: TCP
-          EOF
+          # Create simple cluster
+          kind create cluster --name ecommerce --wait 60s
+
+          # Test application locally first
+          echo "Testing application startup locally..."
+          timeout 30 java -jar target/*.jar --spring.profiles.active=ci &
+          APP_PID=$!
+          sleep 10
+
+          # Check if process is still running
+          if kill -0 $APP_PID 2>/dev/null; then
+            echo "✅ Application started successfully locally"
+            kill $APP_PID
+          else
+            echo "❌ Application failed to start locally"
+            exit 1
+          fi
 
           # Build and load image
           docker build -t ecommerce-api:ci .
           kind load docker-image ecommerce-api:ci --name ecommerce
 
-          # Update deployment image reference
+          # Update deployment
           sed -i 's|ghcr.io/zetta1973/ecommerce-api:latest|ecommerce-api:ci|g' k8s/application/deployment.yaml
 
-          # Deploy application
+          # Deploy
           kubectl apply -f k8s/application/
 
-          # Debug: Check if pod was created
-          echo "Checking pod creation..."
-          kubectl get pods -l app=ecommerce-api
-
-          # Debug: Check pod status immediately
-          echo "Pod status after apply:"
-          kubectl describe pod -l app=ecommerce-api
-
-          # Wait for pod to be ready with more verbose output
+          # Wait with diagnostics
           echo "Waiting for pod to be ready..."
-          if ! kubectl wait --for=condition=ready pod -l app=ecommerce-api --timeout=300s; then
+          if ! kubectl wait --for=condition=ready pod -l app=ecommerce-api --timeout=120s; then
             echo "❌ Pod failed to become ready. Gathering diagnostic information..."
 
-            # Show pod status
             kubectl get pods -l app=ecommerce-api -o wide
-
-            # Show detailed pod description
             kubectl describe pod -l app=ecommerce-api
-
-            # Show pod logs (if any)
             echo "Pod logs:"
-            kubectl logs -l app=ecommerce-api --tail=200 || echo "No logs available"
-
-            # Check if container is running
-            echo "Container status:"
-            kubectl get pod -l app=ecommerce-api -o jsonpath='{.items[0].status.containerStatuses[0]}' | jq . 2>/dev/null || echo "Cannot get container status"
-
-            # Check events
-            echo "Recent events:"
-            kubectl get events --sort-by=.metadata.creationTimestamp | tail -20
+            kubectl logs -l app=ecommerce-api --tail=100 || echo "No logs available"
 
             exit 1
           fi
+
+          echo "✅ Pod is ready!"
 
       - name: Test application
         run: |
