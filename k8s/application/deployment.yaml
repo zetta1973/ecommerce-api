@@ -18,9 +18,8 @@ spec:
       - name: ecommerce-api
         image: ecommerce-api:ci
         imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
-          name: http
+         ports:
+         - containerPort: 8080
          env:
          - name: SPRING_PROFILES_ACTIVE
            value: "ci"
