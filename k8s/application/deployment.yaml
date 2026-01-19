@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: ecommerce-api
-        image: ecommerce-api:ci
-        imagePullPolicy: IfNotPresent
+         image: ecommerce-api:ci
+         imagePullPolicy: IfNotPresent
          ports:
          - containerPort: 8080
          env:
