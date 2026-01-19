@@ -74,18 +74,34 @@ jobs:
 
            # Test application locally first
            echo "Testing application startup locally..."
-           timeout 60 java -jar target/ecommerce-api-*.jar --spring.profiles.active=ci &
+           timeout 120 java -Dserver.address=0.0.0.0 -Dspring.profiles.active=ci -jar target/ecommerce-api-*.jar 2>&1 &
            APP_PID=$!
-           sleep 5
+           echo "App started with PID: $APP_PID"
+           sleep 15
 
-          # Check if process is still running
-          if kill -0 $APP_PID 2>/dev/null; then
-            echo "✅ Application started successfully locally"
-            kill $APP_PID
-          else
-            echo "❌ Application failed to start locally"
-            exit 1
-          fi
+           # Check if process is still running and port is listening
+           if kill -0 $APP_PID 2>/dev/null; then
+             echo "Application process is running, checking port 8080..."
+             for i in 1 2 3 4 5; do
+               if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
+                 echo "✅ Application started successfully and health endpoint responds"
+                 kill $APP_PID
+                 break
+               fi
+               echo "Waiting for health endpoint... ($i/5)"
+               sleep 5
+             done
+             if kill -0 $APP_PID 2>/dev/null; then
+               echo "✅ Application started successfully locally"
+               kill $APP_PID
+             else
+               echo "❌ Application process died or health endpoint never responded"
+               exit 1
+             fi
+           else
+             echo "❌ Application failed to start locally"
+             exit 1
+           fi
 
            # Build and load image
            docker build -t ecommerce-api:ci .

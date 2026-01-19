@@ -8,5 +8,5 @@ COPY target/ecommerce-api-*.jar app.jar
 
 EXPOSE 8080
 
-# Simple startup
-CMD ["java", "-jar", "app.jar"]
+# Startup with explicit binding and profile
+CMD ["java", "-Dserver.address=0.0.0.0", "-Dspring.profiles.active=ci", "-jar", "app.jar"]
