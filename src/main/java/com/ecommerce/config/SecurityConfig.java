@@ -26,20 +26,20 @@ public class SecurityConfig {
 
         http.csrf(cs -> cs.disable())
             .authorizeHttpRequests(auth -> auth
-                // Health check endpoints for Kubernetes probes - permit all actuator endpoints
-                .requestMatchers("/actuator/**").permitAll()
+                // Health check endpoints for Kubernetes probes - permit ALL actuator paths first
+                .requestMatchers("/actuator/**", "/actuator", "/health", "/health/**").permitAll()
 
+                // Public endpoints
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/admin/ping").permitAll()
-
-                // === abierto para tus tests ===
                 .requestMatchers("/products").permitAll()
 
-                // === rutas protegidas reales ===
+                // Protected endpoints
                 .requestMatchers("/admin/users").hasAuthority("READ_USERS")
                 .requestMatchers("/api/products").hasAuthority("CREATE_PRODUCTS")
                 .requestMatchers("/api/products/**").hasAnyAuthority("UPDATE_PRODUCTS", "DELETE_PRODUCTS")
 
+                // All other requests require authentication
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
