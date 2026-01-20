@@ -4,22 +4,38 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationManagerResolver;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.util.Collections;
 
 @Configuration
+@EnableWebSecurity
 @Profile("ci")
 public class CiSecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(cs -> cs.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/**", "/actuator", "/health", "/health/**").permitAll()
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/admin/ping").permitAll()
+                .requestMatchers("/products").permitAll()
+                .anyRequest().permitAll()
+            )
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        return http.build();
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -27,14 +43,18 @@ public class CiSecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager() {
+        return authentication -> null;
     }
 
     @Bean
-    public AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver() {
-        return request -> {
-            throw new AuthenticationServiceException("Authentication disabled in CI profile");
-        };
+    public UserDetailsService userDetailsService() {
+        UserDetails user = User.builder()
+            .passwordEncoder(passwordEncoder()::encode)
+            .username("ci-user")
+            .password("ci-password")
+            .authorities(Collections.emptyList())
+            .build();
+        return new InMemoryUserDetailsManager(user);
     }
 }
