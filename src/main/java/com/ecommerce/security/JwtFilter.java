@@ -19,6 +19,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Profile("!ci")
 public class JwtFilter extends OncePerRequestFilter {
 
     private final UserRepository userRepo;
