@@ -69,8 +69,11 @@ jobs:
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
 
-          # Create simple cluster
-          kind create cluster --name ecommerce --wait 60s
+           # Delete existing cluster and create fresh one
+           kind delete cluster --name ecommerce || true
+           kind create cluster --name ecommerce --wait 60s
+
+           # Build and load image fresh
 
            # Test application locally first
            echo "Testing application startup locally..."
