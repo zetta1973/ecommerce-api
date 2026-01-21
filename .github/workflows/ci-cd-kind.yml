@@ -110,7 +110,11 @@ jobs:
            docker build -t ecommerce-api:ci .
            echo "Verifying Docker image..."
            docker images | grep ecommerce-api || (echo "Docker image not found" && exit 1)
-           kind load docker-image ecommerce-api:ci --name ecommerce
+            kind load docker-image ecommerce-api:ci --name ecommerce
+
+            # Create namespace if it doesn't exist
+            kubectl create namespace ecommerce --dry-run=client -o yaml | kubectl apply -f -
+            sleep 2
 
             # Deploy infrastructure (manifests already have namespace)
             kubectl apply -f k8s/infrastructure/ -n ecommerce
