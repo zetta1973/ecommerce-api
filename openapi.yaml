@@ -1,0 +1,560 @@
+openapi: 3.0.3
+info:
+  title: Ecommerce API
+  description: API de e-commerce con autenticación JWT
+  version: 1.0.0
+  contact:
+    name: Ecommerce API
+servers:
+  - url: http://localhost:8080
+    description: Servidor local
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Registrar nuevo usuario
+      description: Crea un nuevo usuario en el sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegisterDto'
+      responses:
+        '201':
+          description: Usuario creado exitosamente
+        '400':
+          description: Email ya existe
+      security: []
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Iniciar sesión
+      description: Inicia sesión y devuelve tokens JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginDto'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciales inválidas
+      security: []
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Renovar token
+      description: Renueva el token de acceso usando el refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Refresh token inválido
+      security: []
+
+  /admin/ping:
+    get:
+      tags:
+        - Admin
+      summary: Ping público
+      description: Verifica que el servidor está funcionando
+      responses:
+        '200':
+          description: Servidor funcionando
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: pong
+      security: []
+
+  /admin/users:
+    get:
+      tags:
+        - Admin
+      summary: Listar usuarios
+      description: Lista todos los usuarios registrados
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '403':
+          description: No autorizado
+
+  /admin/roles/assign:
+    post:
+      tags:
+        - Admin
+      summary: Asignar permiso a rol
+      description: Asigna un permiso a un rol específico
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionDto'
+      responses:
+        '200':
+          description: Permiso asignado
+        '400':
+          description: Rol o permiso no encontrado
+
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: Listar productos
+      description: Obtiene lista de todos los productos
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+      security: []
+
+    post:
+      tags:
+        - Products
+      summary: Crear producto
+      description: Crea un nuevo producto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateDto'
+      responses:
+        '201':
+          description: Producto creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '403':
+          description: No autorizado
+
+  /api/products/search:
+    get:
+      tags:
+        - Products
+      summary: Buscar productos
+      description: Busca productos por nombre
+      parameters:
+        - in: query
+          name: name
+          required: true
+          schema:
+            type: string
+          description: Término de búsqueda
+      responses:
+        '200':
+          description: Lista de productos encontrados
+      security: []
+
+  /api/products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Ver producto específico
+      description: Obtiene detalles de un producto específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Producto encontrado
+        '404':
+          description: Producto no encontrado
+
+    put:
+      tags:
+        - Products
+      summary: Actualizar producto
+      description: Actualiza un producto existente
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateDto'
+      responses:
+        '200':
+          description: Producto actualizado
+        '404':
+          description: Producto no encontrado
+
+    delete:
+      tags:
+        - Products
+      summary: Eliminar producto
+      description: Elimina un producto
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Producto eliminado
+        '404':
+          description: Producto no encontrado
+
+  /api/products/{id}/stock:
+    get:
+      tags:
+        - Products
+      summary: Ver stock producto
+      description: Obtiene el stock de un producto específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Stock del producto
+          content:
+            application/json:
+              schema:
+                type: integer
+
+  /api/orders:
+    get:
+      tags:
+        - Orders
+      summary: Mis órdenes
+      description: Obtiene las órdenes del usuario autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de órdenes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderResponse'
+
+    post:
+      tags:
+        - Orders
+      summary: Crear orden
+      description: Crea una nueva orden
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequestDto'
+      responses:
+        '201':
+          description: Orden creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '403':
+          description: No autorizado
+
+  /api/orders/all:
+    get:
+      tags:
+        - Orders
+      summary: Listar todas las órdenes (Admin)
+      description: Lista todas las órdenes del sistema
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de todas las órdenes
+
+  /api/orders/{id}:
+    get:
+      tags:
+        - Orders
+      summary: Ver orden específica
+      description: Obtiene detalles de una orden específica
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Orden encontrada
+
+  /api/orders/{id}/status:
+    put:
+      tags:
+        - Orders
+      summary: Actualizar estado orden
+      description: Actualiza el estado de una orden
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: status
+          required: true
+          schema:
+            type: string
+            enum: [PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED]
+      responses:
+        '200':
+          description: Estado actualizado
+
+  /api/orders/user/{userId}:
+    get:
+      tags:
+        - Orders
+      summary: Órdenes de un usuario
+      description: Lista las órdenes de un usuario específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Lista de órdenes del usuario
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserRegisterDto:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          example: testuser
+        email:
+          type: string
+          format: email
+          example: test@test.com
+        password:
+          type: string
+          format: password
+          example: test123
+
+    UserLoginDto:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: test@test.com
+        password:
+          type: string
+          format: password
+          example: test123
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          example: 3600000
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    ProductCreateDto:
+      type: object
+      required:
+        - name
+        - price
+        - stock
+      properties:
+        name:
+          type: string
+          example: Producto Test
+        description:
+          type: string
+          example: Descripción del producto
+        price:
+          type: number
+          format: double
+          example: 29.99
+        stock:
+          type: integer
+          example: 100
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: double
+        stock:
+          type: integer
+
+    OrderRequestDto:
+      type: object
+      required:
+        - productIds
+      properties:
+        productIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [1, 2, 3]
+
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        total:
+          type: number
+          format: double
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+
+    AssignPermissionDto:
+      type: object
+      required:
+        - roleName
+        - permissionName
+      properties:
+        roleName:
+          type: string
+          example: ROLE_USER
+        permissionName:
+          type: string
+          example: READ_PRODUCTS

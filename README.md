@@ -1,6 +1,6 @@
 # 🛍️ Ecommerce API
 
-Plataforma de comercio electrónico construida con Java + Spring Boot, siguiendo la filosofía API-first con OpenAPI 3.0. Totalmente dockerizada y lista para CI/CD con Jenkins.
+Plataforma de comercio electrónico construida con Java + Spring Boot, siguiendo la filosofía API-first con OpenAPI 3.0. Totalmente dockerizada y lista para CI/CD con GitHub Actions.
 
 ## 🚀 Funcionalidades
 
@@ -17,156 +17,185 @@ Plataforma de comercio electrónico construida con Java + Spring Boot, siguiendo
 - PostgreSQL
 - OpenAPI 3.0 + Swagger UI
 - Docker + Docker Compose
-- Jenkins (CI/CD)
+- GitHub Actions (CI/CD)
 - Maven
+- Kubernetes (Kind/Rancher Desktop)
 
 ## 📦 Cómo ejecutar en local
 
+### Opción 1: Despliegue rápido con script (recomendado)
+
 ```bash
+# Despliega todo en un solo comando
+bash scripts/deploy-local.sh
+```
+
+Este script:
+- Crea cluster Kind
+- Despliega PostgreSQL y Kafka
+- Construye imagen Docker
+- Despliega aplicación
+- Configura port-forwarding a localhost:8080
+
+### Opción 2: Ejecución manual
+
+```bash
+# Compilar y ejecutar
+mvn spring-boot:run
+
+# Acceder a la API
+curl http://localhost:8080/api/products
+```
+
+### Opción 3: Docker Compose
+
+```bash
+# Ejecutar con Docker Compose
 docker-compose up --build
+```
 
+## 🔧 Despliegue en Kubernetes
 
-{
-  "roleName": "ADMIN",
-  "permissionName": "CREATE_PRODUCTS"
-}
+### Configurar cluster
 
-JENKINS ADMIN PASSWORD GENERADO 6bc2c01f66ab4a35bf3bbdaf75d9e1f1
+```bash
+# Configurar cluster Kind
+bash scripts/setup-kind.sh
+```
 
-docker login
-docker build -t ecommerce-api-1.0.1 . # subir la imagen a rancher
+### Desplegar infraestructura
 
-docker ps -a -f "name=ecommerce" --format "table {{.ID}}\t{{.Image}}\t{{.Names}}"
-docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}"
+```bash
+# Desplegar PostgreSQL y Kafka
+kubectl apply -f k8s/infrastructure/ -n ecommerce
 
-kubectl -n ecommerce get pods -l app=ecommerce-api
-kubectl -n ecommerce logs -l app=ecommerce-api -f
+# Verificar que estén listos
+kubectl get pods -n ecommerce
+```
 
-RECONSTRUIR LA IMAGEN
-docker build -t ecommerce-api:1.0.1 .
+### Desplegar aplicación
 
+```bash
+# Desplegar la aplicación
+kubectl apply -f k8s/application/ -n ecommerce
 
-kubectl -n ecommerce set image deployment/ecommerce-api ecommerce-api=TU_USUARIO/ecommerce-api:1.0.3
+# Ver pods
+kubectl get pods -n ecommerce
 
-kubectl -n ecommerce get pods -l app=ecommerce-api
-kubectl -n ecommerce logs -l app=ecommerce-api -f
+# Ver logs
+kubectl logs -l app=ecommerce-api -n ecommerce -f
+```
 
-# Describe el pod para ver eventos
-kubectl -n ecommerce describe pod -l app=ecommerce-api
+## 🚀 Despliegue desde GHCR
 
-# Verifica que esté usando la imagen correcta
-kubectl -n ecommerce describe pod -l app=ecommerce-api | grep -i image
+```bash
+# Desplegar última versión desde GitHub Container Registry
+bash scripts/auto-deploy-ghcr.sh ecommerce
+```
 
-#Actualizar la imagen
-kubectl -n ecommerce set image deployment/ecommerce-api ecommerce-api=ecommerce-api:1.0.4
+## 🧪 Pruebas
 
- Resumen de pasos completos
-1. Asegúrate de tener la nueva SecurityConfig
-✅ Edita
-SecurityConfig.java
-2. Reconstruye la imagen
-docker build -t ecommerce-api:1.0.4 .
-3. Etiqueta para el registry de Rancher
-docker tag ecommerce-api:1.0.4 rancher.local/ecommerce/ecommerce-api:1.0.4
-4. Sube al registry
-docker push rancher.local/ecommerce/ecommerce-api:1.0.4
-5. Actualiza el Deployment
-kubectl -n ecommerce set image deployment/ecommerce-api ecommerce-api=rancher.local/ecommerce/ecommerce-api:1.0.4
-6. Despausa el Deployment
-kubectl -n ecommerce rollout resume deployment/ecommerce-api
-7. Prueba
-curl http://localhost:30080/admin/ping
+### Tests unitarios
 
+```bash
+# Ejecutar tests
+mvn test
 
-docker images | grep ecommerce
-kubectl -n ecommerce set image deployment/ecommerce-api ecommerce-api=ecommerce-api:1.0.4
+# Generar reporte de cobertura
+mvn jacoco:report
+```
 
+### Pruebas de API
 
-# 1. Reconstruye la imagen
-docker build -t ecommerce-api:1.0.4 .
+```bash
+# Pruebas básicas con curl
+bash scripts/test-api.sh
 
-# 2. Verifica
-docker images | grep ecommerce
+# Pruebas completas con flujo de usuario
+bash scripts/run-api-tests.sh
+```
 
-# 3. Actualiza el Deployment
-kubectl -n ecommerce set image deployment/ecommerce-api ecommerce-api=ecommerce-api:1.0.4
+## 📋 Comandos útiles
 
-# 4. Despausa
-kubectl -n ecommerce rollout resume deployment/ecommerce-api
+```bash
+# Ver pods
+kubectl get pods -n ecommerce
 
-# 5. Espera que el nuevo pod esté listo
-kubectl -n ecommerce get pods -w
+# Ver servicios
+kubectl get svc -n ecommerce
 
-kubectl -n ecommerce get pods -l app=ecommerce-api
-kubectl -n ecommerce describe deployment ecommerce-api | grep -i image
-kubectl -n ecommerce describe pod -l app=ecommerce-api | grep -i image
+# Ver logs
+kubectl logs -l app=ecommerce-api -n ecommerce -f
 
-kubectl -n ecommerce get deployment ecommerce-api
+# Port-forwarding
+kubectl port-forward svc/ecommerce-api 8080:8080 -n ecommerce
 
-Resumen de comandos para diagnóstico
-Ver estructura tabla
-user
-kubectl -n ecommerce exec -it deploy/postgres -- psql -U user -d ecommerce -c "\\d \"user\""
-Ver datos de la tabla
-kubectl -n ecommerce exec -it deploy/postgres -- psql -U user -d ecommerce -c "SELECT * FROM \"user\";"
-Ver tablas en la BD
-kubectl -n ecommerce exec -it deploy/postgres -- psql -U user -d ecommerce -c "\\dt"
+# Eliminar cluster
+kind delete cluster --name ecommerce
+```
 
+## 📊 Arquitectura
 
-./mvnw clean package
-docker build -t ecommerce-api:1.0.4 .
-kubectl -n ecommerce rollout restart deployment/ecommerce-api
+```
+┌───────────────────────────────────────────────────────┐
+│                   Kubernetes Cluster                  │
+├───────────────────┬───────────────────┬─────────────────┤
+│   PostgreSQL      │   Kafka          │ Ecommerce API   │
+│  (persistence)    │  (events)        │  (REST API)     │
+└───────────────────┴───────────────────┴─────────────────┘
+```
 
+## 📁 Estructura del proyecto
 
-# Compila de nuevo
-./mvnw clean package
+```
+.
+├── k8s/
+│   ├── application/        # Manifestos de la aplicación
+│   ├── infrastructure/     # PostgreSQL y Kafka
+│   └── overlays/           # Configuraciones para diferentes entornos
+├── scripts/                # Scripts útiles
+│   ├── deploy-local.sh     # Despliegue local completo
+│   ├── setup-kind.sh       # Configurar cluster Kind
+│   ├── auto-deploy-ghcr.sh # Desplegar desde GHCR
+│   └── test-api.sh         # Pruebas de API
+├── src/
+│   ├── main/
+│   │   ├── java/           # Código fuente
+│   │   └── resources/      # Configuración
+│   └── test/              # Tests
+└── pom.xml                # Dependencias Maven
+```
 
-# Verifica el JAR
-ls -la target/
+## 🔐 Autenticación
 
-# Limpia imágenes antiguas (opcional)
-docker rmi ecommerce-api:1.0.6 2>/dev/null || true
-# Reconstruye
-docker build -t ecommerce-api:1.0.7 .
-# actualiza imagen 
-kubectl -n ecommerce set image deployment/ecommerce-api ecommerce-api=ecommerce-api:1.0.7
-# Forzar reinicio
-kubectl -n ecommerce rollout restart deployment/ecommerce-api
+### Endpoints públicos
 
+- `POST /auth/register` - Registrar usuario
+- `POST /auth/login` - Login y obtener JWT
+- `POST /auth/refresh` - Refrescar token
+- `GET /api/products` - Listar productos
 
--- Asegura que hay un rol
-INSERT INTO role (name) VALUES ('USER') ON CONFLICT DO NOTHING;
+### Endpoints protegidos
 
--- Actualiza el usuario para que tenga un rol válido
-UPDATE users SET role_id = 1 WHERE email = 'zeta@test.com';
+Todos los endpoints bajo `/api/` y `/admin/` requieren:
+```
+Authorization: Bearer <JWT_TOKEN>
+```
 
+## 📚 Documentación
 
--- Crear una secuencia para role
-CREATE SEQUENCE role_id_seq;
+- [API ENDPOINTS.md](API_ENDPOINTS.md) - Documentación detallada de endpoints
+- [CI-CD-SETUP.md](CI-CD-SETUP.md) - Configuración de CI/CD
+- [README-PROCESS.md](README-PROCESS.md) - Proceso de desarrollo
 
--- Actualizar la columna id para que use la secuencia
-ALTER TABLE role ALTER COLUMN id SET DEFAULT nextval('role_id_seq');
-ALTER SEQUENCE role_id_seq OWNED BY role.id;
+## 🤝 Contribución
 
--- Asignar valores actuales si hay datos
-SELECT setval('role_id_seq', COALESCE((SELECT MAX(id)+1 FROM role), 1), false);
+1. Fork el repositorio
+2. Crea una branch con tu feature: `git checkout -b feature/nueva-funcionalidad`
+3. Haz commit de tus cambios: `git commit -m 'feat: añadir nueva funcionalidad'`
+4. Push a la branch: `git push origin feature/nueva-funcionalidad`
+5. Abre un Pull Request
 
--- Crear secuencia
-CREATE SEQUENCE IF NOT EXISTS role_id_seq;
+## 📄 Licencia
 
--- Actualizar la columna id
-ALTER TABLE role ALTER COLUMN id SET DEFAULT nextval('role_id_seq');
-ALTER SEQUENCE role_id_seq OWNED BY role.id;
-
--- Asignar valores si es necesario
-SELECT setval('role_id_seq', COALESCE((SELECT MAX(id)+1 FROM role), 1), false);
-
--- Insertar roles si no existen
-INSERT INTO role (name) VALUES ('USER') ON CONFLICT DO NOTHING;
-INSERT INTO role (name) VALUES ('ADMIN') ON CONFLICT DO NOTHING;
-
--- Verificar que todo esté bien
-SELECT * FROM role;
-
-
-kubectl -n ecommerce get svc kafka-ui
+MIT

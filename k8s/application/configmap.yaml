@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ecommerce-config
-  namespace: default
+  namespace: ecommerce
 data:
   LOG_LEVEL: "INFO"
   datasource-url: "jdbc:postgresql://postgres:5432/ecommerce"
