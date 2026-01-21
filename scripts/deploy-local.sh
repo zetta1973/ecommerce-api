@@ -90,6 +90,16 @@ echo_message "$BLUE" "Desplegando infraestructura..."
 # Crear namespace
 kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
+# Esperar a que el namespace esté listo
+echo_message "$YELLOW" "Esperando a que el namespace esté listo..."
+sleep 2
+
+# Verificar que el namespace existe
+if ! kubectl get namespace $NAMESPACE > /dev/null 2>&1; then
+    echo_message "$RED" "Error: Namespace $NAMESPACE no fue creado correctamente"
+    exit 1
+fi
+
 # Desplegar PostgreSQL y Kafka
 kubectl apply -f k8s/infrastructure/ -n $NAMESPACE
 
