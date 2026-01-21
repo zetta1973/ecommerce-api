@@ -112,14 +112,14 @@ jobs:
            docker images | grep ecommerce-api || (echo "Docker image not found" && exit 1)
            kind load docker-image ecommerce-api:ci --name ecommerce
 
-           # Deploy infrastructure (manifests already have namespace)
-           kubectl apply -f k8s/infrastructure/
-           kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s -n ecommerce
-           kubectl wait --for=condition=ready pod -l app=kafka --timeout=180s -n ecommerce
+            # Deploy infrastructure (manifests already have namespace)
+            kubectl apply -f k8s/infrastructure/ -n ecommerce
+            kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s -n ecommerce
+            kubectl wait --for=condition=ready pod -l app=kafka --timeout=180s -n ecommerce
 
-           # Deploy application with CI image
-           sed -i 's|ghcr.io/zetta1973/ecommerce-api.*|ecommerce-api:ci|g' k8s/application/deployment.yaml
-           kubectl apply -f k8s/application/
+            # Deploy application with CI image
+            sed -i 's|ghcr.io/zetta1973/ecommerce-api.*|ecommerce-api:ci|g' k8s/application/deployment.yaml
+            kubectl apply -f k8s/application/ -n ecommerce
 
            # Wait with diagnostics
            echo "Waiting for pod to be ready..."
