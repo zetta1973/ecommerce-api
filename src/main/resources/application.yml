@@ -53,7 +53,7 @@ spring:
 logging:
   level:
     root: WARN
-    com.ecommerce: INFO
+    com.ecommerce: DEBUG
 
 server:
   port: 8080
@@ -63,16 +63,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,info
+      base-path: /actuator
   endpoint:
     health:
+      enabled: true
       probes:
         enabled: true
-      show-details: never
-  health:
-    livenessState:
+      show-details: always
+    info:
       enabled: true
-    readinessState:
+  health:
+    liveness-state:
+      enabled: true
+    readiness-state:
       enabled: true
   security:
     enabled: false

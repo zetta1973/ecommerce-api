@@ -12,10 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -23,8 +19,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.HashSet;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.matches;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -33,7 +30,6 @@ class AuthControllerTest {
 
     private MockMvc mockMvc;
     private AuthController authController;
-    private AuthenticationManager authManager;
     private UserRepository userRepo;
     private PasswordEncoder encoder;
     private ObjectMapper objectMapper;
@@ -42,11 +38,10 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        authManager = Mockito.mock(AuthenticationManager.class);
         userRepo = Mockito.mock(UserRepository.class);
         encoder = Mockito.mock(PasswordEncoder.class);
         objectMapper = new ObjectMapper();
-        authController = new AuthController(authManager, userRepo, encoder);
+        authController = new AuthController(userRepo, encoder);
         mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
 
         Role role = new Role();
@@ -96,8 +91,8 @@ class AuthControllerTest {
 
     @Test
     void shouldLoginSuccessfully() throws Exception {
-        Authentication auth = new UsernamePasswordAuthenticationToken(testUser, null, testUser.getAuthorities());
-        when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(auth);
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(encoder.matches("password", "encodedPassword")).thenReturn(true);
 
         UserLoginDto dto = new UserLoginDto();
         dto.setEmail("test@example.com");
@@ -113,12 +108,27 @@ class AuthControllerTest {
 
     @Test
     void shouldReturnUnauthorizedWhenLoginFails() throws Exception {
-        when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Invalid credentials"));
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(encoder.matches("wrongpassword", "encodedPassword")).thenReturn(false);
 
         UserLoginDto dto = new UserLoginDto();
         dto.setEmail("test@example.com");
         dto.setPassword("wrongpassword");
+
+        mockMvc.perform(post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenUserNotFound() throws Exception {
+        when(userRepo.findByEmail("notfound@example.com")).thenReturn(Optional.empty());
+
+        UserLoginDto dto = new UserLoginDto();
+        dto.setEmail("notfound@example.com");
+        dto.setPassword("password");
 
         mockMvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)

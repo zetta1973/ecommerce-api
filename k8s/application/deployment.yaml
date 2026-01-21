@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ecommerce-api
+  namespace: ecommerce
   labels:
     app: ecommerce-api
 spec:
@@ -16,8 +17,8 @@ spec:
     spec:
       containers:
         - name: ecommerce-api
-          image: ecommerce-api:ci
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/zetta1973/ecommerce-api/ecommerce-api:main-4a1fc06
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
           env:
