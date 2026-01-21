@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with Kind
+name: CI/CD Pipeline - Build and Test
 
 on:
   push:
@@ -13,9 +13,9 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and Test
+    name: Build, Test and Package
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,135 +39,24 @@ jobs:
           name: coverage-report
           path: target/site/jacoco/
 
-  build-and-deploy-app:
-    name: Build and Deploy Application to Kind
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.event_name == 'push'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
       - name: Build JAR
         run: mvn clean package -DskipTests
 
       - name: Verify JAR exists
         run: ls -la target/*.jar
 
-      - name: Create Kind cluster and test locally
-        run: |
-          # Install Kind
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
-          chmod +x ./kind
-          sudo mv ./kind /usr/local/bin/kind
+      - name: Build Docker image
+        run: docker build -t ecommerce-api:ci .
 
-           # Delete existing cluster and create fresh one
-           kind delete cluster --name ecommerce || true
-           kind create cluster --name ecommerce --wait 60s
+      - name: Verify Docker image
+        run: docker images | grep ecommerce-api
 
-           # Build and load image fresh
+      - name: Save Docker image as artifact
+        run: docker save -o ecommerce-api.tar ecommerce-api:ci
 
-           # Test application locally first
-           echo "Testing application startup locally..."
-           timeout 120 java -Dserver.address=0.0.0.0 -Dspring.profiles.active=ci -jar target/ecommerce-api-*.jar 2>&1 &
-           APP_PID=$!
-           echo "App started with PID: $APP_PID"
-           sleep 15
-
-           # Check if process is still running and port is listening
-           if kill -0 $APP_PID 2>/dev/null; then
-             echo "Application process is running, checking port 8080..."
-             for i in 1 2 3 4 5; do
-               if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
-                 echo "✅ Application started successfully and health endpoint responds"
-                 kill $APP_PID
-                 break
-               fi
-               echo "Waiting for health endpoint... ($i/5)"
-               sleep 5
-             done
-             if kill -0 $APP_PID 2>/dev/null; then
-               echo "✅ Application started successfully locally"
-               kill $APP_PID
-             else
-               echo "❌ Application process died or health endpoint never responded"
-               exit 1
-             fi
-           else
-             echo "❌ Application failed to start locally"
-             exit 1
-           fi
-
-           # Build and load image
-           docker build -t ecommerce-api:ci .
-           echo "Verifying Docker image..."
-           docker images | grep ecommerce-api || (echo "Docker image not found" && exit 1)
-            kind load docker-image ecommerce-api:ci --name ecommerce
-
-            # Create namespace if it doesn't exist
-            kubectl create namespace ecommerce --dry-run=client -o yaml | kubectl apply -f -
-            sleep 2
-
-            # Deploy infrastructure (manifests already have namespace)
-            kubectl apply -f k8s/infrastructure/ -n ecommerce
-            kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s -n ecommerce
-            kubectl wait --for=condition=ready pod -l app=kafka --timeout=180s -n ecommerce
-
-            # Deploy application with CI image
-            sed -i 's|ghcr.io/zetta1973/ecommerce-api.*|ecommerce-api:ci|g' k8s/application/deployment.yaml
-            kubectl apply -f k8s/application/ -n ecommerce
-
-           # Wait with diagnostics
-           echo "Waiting for pod to be ready..."
-           kubectl get pods -l app=ecommerce-api
-           if ! kubectl wait --for=condition=ready pod -l app=ecommerce-api --timeout=90s; then
-             echo "❌ Pod failed to become ready. Gathering diagnostic information..."
-
-             kubectl get pods -l app=ecommerce-api -o wide
-             kubectl describe pod -l app=ecommerce-api
-             kubectl get events --sort-by=.metadata.creationTimestamp
-             echo "Pod logs:"
-             kubectl logs -l app=ecommerce-api --tail=100 || echo "No logs available"
-             echo "Container logs:"
-             kubectl logs -l app=ecommerce-api -c ecommerce-api --tail=100 || echo "No container logs"
-
-             exit 1
-           fi
-
-          echo "✅ Pod is ready!"
-
-      - name: Test application
-        run: |
-          # Port forward and test
-          kubectl port-forward svc/ecommerce-api 8080:8080 &
-          PF_PID=$!
-
-          # Wait for port forward to be ready
-          sleep 10
-
-          # Test health endpoint
-          if curl -f http://localhost:8080/actuator/health; then
-            echo "✅ Application is healthy!"
-          else
-            echo "❌ Application health check failed"
-            kubectl logs -l app=ecommerce-api
-            exit 1
-          fi
-
-           # Test API endpoint
-           if curl -f http://localhost:8080/api/products; then
-             echo "✅ API is responding!"
-           else
-             echo "❌ API endpoint failed"
-             exit 1
-           fi
-
-          kill $PF_PID
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecommerce-api-docker-image
+          path: ecommerce-api.tar
+          retention-days: 7
