@@ -229,7 +229,7 @@
           <failBuildOnCVSS>7</failBuildOnCVSS>
           <skipUpdate>true</skipUpdate>
           <autoUpdate>false</autoUpdate>
-          <cveUrlModified>https://services.nvd.nist.gov/rest/json/cves/2.0/?startIndex={0}&resultsPerPage={1}&lastModStartDate={2}&lastModEndDate={3}&apiKey={4}</cveUrlModified>
+          <cveUrlModified>https://services.nvd.nist.gov/rest/json/cves/2.0/&amp;startIndex={0}&amp;resultsPerPage={1}&amp;lastModStartDate={2}&amp;lastModEndDate={3}&amp;apiKey={4}</cveUrlModified>
           <nvdApiDelay>1000</nvdApiDelay>
           <suppressionFiles>
             <suppressionFile>src/main/resources/owasp-suppressions.xml</suppressionFile>
