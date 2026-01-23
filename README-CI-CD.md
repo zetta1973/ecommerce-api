@@ -7,7 +7,7 @@ ecommerce-api/
 ├── .gitignore                          # Archivos a ignorar en Git
 ├── .github/
 │   └── workflows/
-│       └── ci-cd.yml                   # Workflow de GitHub Actions (CI/CD completo)
+│       └── ci-cd-kind.yml              # Workflow de GitHub Actions (CI/CD completo)
 ├── k8s/
 │   ├── deployment.yaml                 # Deployment, Service y HPA base
 │   ├── configmap.yaml                  # Configuraciones de la app
@@ -56,19 +56,34 @@ git branch -M main
 git push -u origin main
 ```
 
-### 3. Configurar Secrets en GitHub
+### 3. Configuración de SonarCloud y Secrets en GitHub
+
+**Prerrequisitos para SonarCloud:**
+1. Crear cuenta en [sonarcloud.io](https://sonarcloud.io)
+2. Crear proyecto "ecommerce-api" en SonarCloud
+3. Obtener token de SonarCloud desde la configuración del proyecto
+
+**Secrets en GitHub:**
+Ve a: `Settings → Secrets and variables → Actions`
+
+Agrega:
+- `KUBE_CONFIG`: Contenido de `~/.kube/config` codificado en base64
+- `SONAR_TOKEN`: Token de SonarCloud (requiere proyecto creado previamente)
 
 Ve a: `Settings → Secrets and variables → Actions`
 
 Agrega:
 - `KUBE_CONFIG`: Contenido de `~/.kube/config` codificado en base64
+- `SONAR_TOKEN`: Token de SonarCloud (requiere proyecto creado previamente)
 
 ### 4. Ajustar archivos de configuración
 
 **Importante:** Reemplaza `tu-usuario` en estos archivos con tu nombre de usuario de GitHub:
 - `k8s/deployment.yaml` (línea ~17)
 - `k8s/kustomization.yaml` (línea ~20)
-- `.github/workflows/ci-cd.yml` (líneas ~76, ~120)
+- `.github/workflows/ci-cd-kind.yml` (líneas ~76, ~120)
+
+**SonarCloud:** Verifica que el archivo `sonar-project.properties` existe y contiene la configuración correcta del proyecto.
 
 ## 🔄 Flujo de Trabajo
 
@@ -78,6 +93,7 @@ Push a rama
 GitHub Actions se ejecuta
     ↓
 ├─ Build & Test (Maven)
+├─ Análisis SonarCloud (Calidad de código)
 ├─ Build Docker Image
 └─ Deploy a Kubernetes
     ↓
@@ -143,6 +159,8 @@ Antes del primer despliegue:
 - [ ] ConfigMap actualizado con endpoints correctos
 - [ ] Permisos de GitHub Packages habilitados
 - [ ] Tests pasando localmente (`mvn test`)
+- [ ] Proyecto creado en SonarCloud
+- [ ] Token de SonarCloud configurado en GitHub Secrets
 
 ## 🆘 Problemas Comunes
 
@@ -163,7 +181,25 @@ kubectl logs deployment/ecommerce-api
 kubectl describe pod <pod-name>
 ```
 
+### Error en análisis SonarCloud
+**Solución:**
+1. Verificar que el proyecto existe en SonarCloud
+2. Confirmar que SONAR_TOKEN está configurado correctamente
+3. Chequear que `sonar-project.properties` tiene la configuración correcta
+
 Más soluciones en: `CI-CD-SETUP.md`
+
+## 🔄 Últimos Cambios
+
+### Análisis de Calidad de Código con SonarCloud
+- Configuración automática de análisis estático de código
+- Integración con GitHub Actions
+- Reportes de cobertura de código y calidad
+
+### Configuración Mejorada
+- Actualización a SonarCloud action v5.0.0
+- Corrección de sintaxis YAML en workflows
+- Configuración optimizada para proyectos Java/Spring
 
 ## 📞 Recursos
 
@@ -171,3 +207,4 @@ Más soluciones en: `CI-CD-SETUP.md`
 - [Kubernetes Docs](https://kubernetes.io/docs/)
 - [Kustomize Docs](https://kustomize.io/)
 - [Rancher Docs](https://ranchermanager.docs.rancher.com/)
+- [SonarCloud Docs](https://docs.sonarcloud.io/)
