@@ -33,11 +33,26 @@ jobs:
       - name: Generate test coverage report
         run: mvn jacoco:report
 
+      - name: OWASP Dependency Check
+        run: mvn dependency-check:check -DfailBuildOnCVSS=7
+
+      - name: Upload OWASP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report
+          path: target/dependency-check-report.html
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: target/site/jacoco/
+
+      - name: SonarCloud Analysis
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Build JAR
         run: mvn clean package -DskipTests
@@ -46,7 +61,7 @@ jobs:
         run: ls -la target/*.jar
 
       - name: Build Docker image
-        run: docker build -t ecommerce-api:ci .
+        run: docker build -t ecommerce-api:ci --cache-from=ghcr.io/${{ github.repository }}/ecommerce-api:ci --cache-to=type=gha,mode=max .
 
       - name: Verify Docker image
         run: docker images | grep ecommerce-api
