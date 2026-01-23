@@ -105,9 +105,7 @@ El plugin OWASP Dependency Check está configurado en `pom.xml`:
   <configuration>
     <format>HTML</format>
     <failBuildOnCVSS>7</failBuildOnCVSS>
-    <skipUpdate>true</skipUpdate>
-    <autoUpdate>false</autoUpdate>
-    <cveUrlModified>https://services.nvd.nist.gov/rest/json/cves/2.0/?startIndex={0}&resultsPerPage={1}&lastModStartDate={2}&lastModEndDate={3}&apiKey={4}</cveUrlModified>
+    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
     <nvdApiDelay>1000</nvdApiDelay>
     <suppressionFiles>
       <suppressionFile>src/main/resources/owasp-suppressions.xml</suppressionFile>
@@ -116,10 +114,32 @@ El plugin OWASP Dependency Check está configurado en `pom.xml`:
 </plugin>
 ```
 
+### Configuración de `dependency-check.properties`
+
+El archivo `dependency-check.properties` configura el plugin para evitar problemas en entornos CI/CD:
+
+```properties
+# Desactiva la actualización automática para evitar fallos en el build
+autoUpdate=false
+
+# Usa base de datos local si está disponible
+cveUrlModified=https://services.nvd.nist.gov/rest/json/cves/2.0/?startIndex={0}&resultsPerPage={1}&lastModStartDate={2}&lastModEndDate={3}&apiKey={4}
+
+# Retraso entre solicitudes a la API para evitar tasa de límite
+nvdApiDelay=1000
+
+# Falla el build si se detectan vulnerabilidades con CVSS >= 7
+failBuildOnCVSS=7
+
+# Formato de salida
+format=HTML
+```
+
 **Configuración importante**:
-- `skipUpdate=true`: Evita la actualización de la base de datos NVD en CI/CD.
-- `failBuildOnCVSS=7`: Falla el build si se detectan vulnerabilidades con CVSS >= 7.
+- `autoUpdate=false`: Desactiva la actualización automática para evitar fallos en CI/CD.
+- `nvdApiKey=${env.NVD_API_KEY}`: Usa la clave API de NVD configurada en GitHub Secrets.
 - `nvdApiDelay=1000`: Retraso de 1000ms entre solicitudes a la API de NVD.
+- `failBuildOnCVSS=7`: Falla el build si se detectan vulnerabilidades con CVSS >= 7.
 
 ### Configuración de `sonar-project.properties`
 

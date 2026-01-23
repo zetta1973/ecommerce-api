@@ -34,7 +34,9 @@ jobs:
         run: mvn jacoco:report
 
       - name: OWASP Dependency Check
-        run: mvn org.owasp:dependency-check-maven:9.0.9:check -DfailBuildOnCVSS=7 -DskipUpdate=true
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: mvn org.owasp:dependency-check-maven:9.0.9:check -Dpropertyfile=dependency-check.properties
 
       - name: Upload OWASP Report
         uses: actions/upload-artifact@v4
