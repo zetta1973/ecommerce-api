@@ -34,9 +34,14 @@ jobs:
         run: mvn jacoco:report
 
       - name: OWASP Dependency Check
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: mvn org.owasp:dependency-check-maven:9.0.9:check -DfailBuildOnCVSS=7 -DnvdApiKey=$NVD_API_KEY
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'ecommerce-api'
+          path: '.'
+          format: 'HTML'
+          fail_on_error: true
+          fail_build_on_cvss: 7
+          skip_update: true
 
       - name: Upload OWASP Report
         uses: actions/upload-artifact@v4
