@@ -34,6 +34,8 @@ jobs:
         run: mvn jacoco:report
 
       - name: OWASP Dependency Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: mvn dependency-check:check -DfailBuildOnCVSS=7
 
       - name: Upload OWASP Report
