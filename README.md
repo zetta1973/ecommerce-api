@@ -9,7 +9,7 @@ Plataforma de comercio electrónico construida con Java + Spring Boot, siguiendo
 - Carrito de compra
 - Creación y seguimiento de pedidos
 - Valoraciones de productos
-- Simulación de pagos
+- Simulación de pagos -
 
 ## 🧱 Tecnologías
 
