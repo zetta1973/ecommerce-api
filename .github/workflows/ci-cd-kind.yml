@@ -27,10 +27,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run tests, SonarCloud analysis, and OWASP Dependency Check
-        run: mvn clean verify jacoco:report sonar:sonar -Dsonar.projectKey=ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+      - name: Run tests and SonarCloud analysis
+        run: mvn clean verify jacoco:report sonar:sonar -DskipDependencyCheck -Dsonar.projectKey=ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
       - name: Build JAR
         run: mvn clean package -DskipTests

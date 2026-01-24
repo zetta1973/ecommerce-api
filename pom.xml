@@ -229,8 +229,8 @@
           <format>HTML</format>
           <failBuildOnCVSS>7</failBuildOnCVSS>
            <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
-           <nvdApiDelay>3000</nvdApiDelay>
-           <nvdMaxRetryCount>5</nvdMaxRetryCount>
+           <nvdApiDelay>10000</nvdApiDelay>
+           <nvdMaxRetryCount>10</nvdMaxRetryCount>
           <nvdApiDelay>1000</nvdApiDelay>
           <suppressionFiles>
             <suppressionFile>src/main/resources/owasp-suppressions.xml</suppressionFile>
