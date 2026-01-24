@@ -44,7 +44,14 @@ Limpia el repositorio local de Maven para garantizar builds frescos.
 ```
 Ejecuta todas las pruebas unitarias e integradas usando Maven y genera reportes de cobertura JaCoCo.
 
-### 5. Análisis con SonarCloud
+### 5. Escaneo de Dependencias OWASP (Opcional)
+```yaml
+- name: OWASP Dependency Check
+  run: mvn org.owasp:dependency-check-maven:check
+```
+**Propósito**: Escanea las dependencias del proyecto en busca de vulnerabilidades conocidas.
+
+### 6. Análisis con SonarCloud
 ```yaml
 - name: SonarCloud Scan
   env:

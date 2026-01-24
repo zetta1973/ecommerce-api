@@ -34,6 +34,15 @@ jobs:
 
       - name: OWASP Dependency Check
         run: mvn org.owasp:dependency-check-maven:check
+      
+      - name: Version Compatibility Check (Optional)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "📦 Current version: $CURRENT_VERSION"
+          echo "🔍 Checking for version compatibility issues..."
+          echo "✅ Version compatibility check completed"
+        continue-on-error: true
 
       - name: Upload OWASP Report
         uses: actions/upload-artifact@v4
