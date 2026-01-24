@@ -35,6 +35,15 @@ jobs:
       - name: Run tests and generate coverage
         run: mvn clean verify jacoco:report
 
+      - name: OWASP Dependency Check
+        run: ./mvnw org.owasp:dependency-check-maven:check
+
+      - name: Upload OWASP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.html
+
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

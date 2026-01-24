@@ -78,19 +78,19 @@ temp/
 .scannerwork/
 
 # Jenkins files (optional - keep if needed)
-# jenkins/
+jenkins/
 # Jenkinsfile
 
 # Kubernetes manifests (optional - keep if needed)
-# k8s/
-# *.kubeconfig
-# kubectl
+k8s/
+*.kubeconfig
+kubectl
 
 # Postman collections (optional - keep if needed)
-# postman/
+postman/
 
 # Scripts (optional - keep if needed)
-# scripts/
+scripts/
 
 # Documentation drafts
 docs/draft/
