@@ -77,19 +77,19 @@ temp/
 .sonar/
 .scannerwork/
 
-# Jenkins files (optional - keep if needed)
+# Jenkins CI/CD configuration
 jenkins/
-# Jenkinsfile
+Jenkinsfile
 
-# Kubernetes manifests (optional - keep if needed)
+# Kubernetes manifests for deployment
 k8s/
 *.kubeconfig
 kubectl
 
-# Postman collections (optional - keep if needed)
+# API testing collection
 postman/
 
-# Scripts (optional - keep if needed)
+# Development and deployment scripts
 scripts/
 
 # Documentation drafts
