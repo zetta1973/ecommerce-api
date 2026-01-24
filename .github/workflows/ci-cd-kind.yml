@@ -73,6 +73,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/zetta1973/ecommerce-api:${{ github.sha }}
+            ghcr.io/zetta1973/ecommerce-api:ci-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Tag and push Docker image to GHCR
         run: |
           IMAGE_TAG=ghcr.io/${{ github.repository }}/ecommerce-api:ci-${{ github.sha }}
