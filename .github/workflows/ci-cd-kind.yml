@@ -29,9 +29,6 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Clean Maven cache
-        run: mvn dependency:purge-local-repository
-
       - name: Run tests and generate coverage
         run: mvn clean verify jacoco:report
 
@@ -49,11 +46,10 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=zetta1973_ecommerce_api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io
 
-      - name: Build JAR
-        run: mvn clean package -DskipTests
 
-      - name: Verify JAR exists
-        run: ls -la target/*.jar
+
+      - name: Verify JAR exists and prepare for Docker
+        run: ls -la target/*.jar && echo "JAR ready for Docker build"
 
       - name: Build Docker image
         run: docker build -t ecommerce-api:ci --cache-from=ghcr.io/${{ github.repository }}/ecommerce-api:ci --cache-to=type=gha,mode=max .
