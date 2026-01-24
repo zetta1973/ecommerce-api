@@ -231,6 +231,7 @@
            <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
            <nvdApiDelay>10000</nvdApiDelay>
            <nvdMaxRetryCount>10</nvdMaxRetryCount>
+           <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
            <suppressionFiles>
              <suppressionFile>src/main/resources/owasp-suppressions.xml</suppressionFile>
            </suppressionFiles>

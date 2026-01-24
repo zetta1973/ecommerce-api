@@ -27,6 +27,9 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Create directory for OWASP Dependency Check
+        run: mkdir -p target/dependency-check-data
+
       - name: Run tests, SonarCloud analysis, and OWASP Dependency Check
         run: mvn clean verify jacoco:report sonar:sonar -Dsonar.projectKey=ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
         env:
