@@ -28,7 +28,7 @@ jobs:
           cache: 'maven'
 
       - name: Run tests and SonarCloud analysis
-        run: mvn clean test jacoco:report sonar:sonar -Dsonar.projectKey=ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+        run: mvn clean verify jacoco:report sonar:sonar -Dsonar.projectKey=ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
       - name: Build JAR
         run: mvn clean package -DskipTests
