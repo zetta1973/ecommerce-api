@@ -55,8 +55,6 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=zetta1973_ecommerce_api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io
 
-
-
       - name: Verify JAR exists and prepare for Docker
         run: ls -la target/*.jar && echo "JAR ready for Docker build"
 
@@ -78,18 +76,15 @@ jobs:
           tags: |
             ghcr.io/zetta1973/ecommerce-api:${{ github.sha }}
             ghcr.io/zetta1973/ecommerce-api:ci-latest
+            ghcr.io/${{ github.repository }}/ecommerce-api:ci-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Tag and push Docker image to GHCR
+      - name: Pull and save Docker image as artifact (optional)
         run: |
-          IMAGE_TAG=ghcr.io/${{ github.repository }}/ecommerce-api:ci-${{ github.sha }}
-          docker tag ecommerce-api:ci $IMAGE_TAG
-          docker push $IMAGE_TAG
-          echo "Image pushed to: $IMAGE_TAG"
-
-      - name: Save Docker image as artifact (optional)
-        run: docker save -o ecommerce-api.tar ecommerce-api:ci
+          docker pull ghcr.io/${{ github.repository }}/ecommerce-api:ci-${{ github.sha }}
+          docker tag ghcr.io/${{ github.repository }}/ecommerce-api:ci-${{ github.sha }} ecommerce-api:ci
+          docker save -o ecommerce-api.tar ecommerce-api:ci
 
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
