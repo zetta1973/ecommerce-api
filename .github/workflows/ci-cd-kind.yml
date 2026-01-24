@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for SonarCloud
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -31,7 +33,7 @@ jobs:
         run: mvn dependency:purge-local-repository
 
       - name: Run tests and SonarCloud analysis
-        run: mvn clean verify jacoco:report sonar:sonar -Dsonar.projectKey=ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+        run: mvn clean verify jacoco:report sonar:sonar -Dsonar.projectKey=ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }} -Dsonar.branch.name=${{ github.ref_name }}
 
       - name: Build JAR
         run: mvn clean package -DskipTests
