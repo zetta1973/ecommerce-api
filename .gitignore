@@ -77,10 +77,20 @@ temp/
 .sonar/
 .scannerwork/
 
-# Kubernetes manifests (not needed in main repo)
-k8s/
-*.kubeconfig
-kubectl
+# Jenkins files (optional - keep if needed)
+# jenkins/
+# Jenkinsfile
+
+# Kubernetes manifests (optional - keep if needed)
+# k8s/
+# *.kubeconfig
+# kubectl
+
+# Postman collections (optional - keep if needed)
+# postman/
+
+# Scripts (optional - keep if needed)
+# scripts/
 
 # Documentation drafts
 docs/draft/
