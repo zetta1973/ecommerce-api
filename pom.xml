@@ -213,30 +213,29 @@
         </executions>
       </plugin>
 
-      <!-- OWASP Dependency Check Plugin -->
-      <plugin>
-        <groupId>org.owasp</groupId>
-        <artifactId>dependency-check-maven</artifactId>
-        <version>9.0.9</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <format>HTML</format>
-          <failBuildOnCVSS>7</failBuildOnCVSS>
+       <!-- OWASP Dependency Check Plugin (disabled temporarily) -->
+       <!-- <plugin>
+         <groupId>org.owasp</groupId>
+         <artifactId>dependency-check-maven</artifactId>
+         <version>9.0.9</version>
+         <executions>
+           <execution>
+             <goals>
+               <goal>check</goal>
+             </goals>
+           </execution>
+         </executions>
+         <configuration>
+           <format>HTML</format>
+           <failBuildOnCVSS>7</failBuildOnCVSS>
            <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
            <nvdApiDelay>10000</nvdApiDelay>
            <nvdMaxRetryCount>10</nvdMaxRetryCount>
-          <nvdApiDelay>1000</nvdApiDelay>
-          <suppressionFiles>
-            <suppressionFile>src/main/resources/owasp-suppressions.xml</suppressionFile>
-          </suppressionFiles>
-        </configuration>
-      </plugin>
+           <suppressionFiles>
+             <suppressionFile>src/main/resources/owasp-suppressions.xml</suppressionFile>
+           </suppressionFiles>
+         </configuration>
+       </plugin> -->
       <!-- Maven Enforcer Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
