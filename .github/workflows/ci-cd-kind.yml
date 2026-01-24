@@ -27,15 +27,11 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Clean Maven cache and create directory for OWASP Dependency Check
-        run: |
-          mvn dependency:purge-local-repository
-          mkdir -p target/dependency-check-data
+      - name: Clean Maven cache
+        run: mvn dependency:purge-local-repository
 
-      - name: Run tests, SonarCloud analysis, and OWASP Dependency Check
+      - name: Run tests and SonarCloud analysis
         run: mvn clean verify jacoco:report sonar:sonar -Dsonar.projectKey=ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 
       - name: Build JAR
         run: mvn clean package -DskipTests
