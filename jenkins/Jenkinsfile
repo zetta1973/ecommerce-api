@@ -1,0 +1,108 @@
+pipeline {
+    agent any
+    
+    tools {
+        maven 'M3'
+    jdk '17'
+    git 'Global'
+    sonarqube 'SonarScanner'
+    sonarqubesonar 'SonarScanner'
+    sonargosonar 'SonarScanner'
+    dependencycheck 'OWASP-Dependency-Check'
+    owaspdependencycheck 'OWASP-Dependency-Check'
+    owaspdependencycheckanalysis 'OWASP-Dependency-Check'
+        installationMode 's'
+        uploadAnalyzer 'true'
+    }
+    
+    environment {
+        SONAR_TOKEN = credentials('sonarcloud-token')
+        NVD_API_KEY = credentials('nvd-api-key')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/zetta1973/ecommerce-api.git'
+            }
+        }
+        
+        stage('Build & Test') {
+            steps {
+                script {
+                    sh './mvnw clean compile'
+                    sh './mvnw test'
+                }
+                post {
+                    always {
+                        junit 'target/surefire-reports/**/*.xml'
+                    }
+                }
+            }
+        }
+        
+        stage('Security Analysis') {
+            parallel {
+                stage('OWASP Dependency Check') {
+                    steps {
+                        script {
+                            sh './mvnw org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7 -DskipUpdate=true'
+                        }
+                        post {
+                            always {
+                                publishHTML([
+                                    allowMissing: false,
+                                    alwaysLinkToLastBuild: true,
+                                    keepAll: true,
+                                    reportDir: 'target',
+                                    reportFiles: 'dependency-check-report.html',
+                                    reportName: 'OWASP Dependency Check Report'
+                                ])
+                            }
+                        }
+                    }
+                }
+                
+                stage('SonarCloud Analysis') {
+                    steps {
+                        script {
+                            sh './mvnw sonar:sonar -Dsonar.projectKey=zetta1973_ecommerce_api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io'
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh 'docker build -t ecommerce-api:${BUILD_NUMBER} .'
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            when {
+                anyOf {
+                    branch 'main'
+                }
+            }
+            steps {
+                script {
+                    sh 'echo "Deploying to production..."'
+                    sh 'docker tag ecommerce-api:${BUILD_NUMBER} ghcr.io/zetta1973/ecommerce-api:latest'
+                    sh 'docker push ghcr.io/zetta1973/ecommerce-api:latest'
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            archiveArtifacts artifacts: 'target/*.jar,target/dependency-check-report.html', fingerprint: true
+        }
+        success {
+            sonarqube qualityGate waitForGate: true
+        }
+    }
+}
