@@ -1,84 +1,38 @@
-name: CI/CD Pipeline - Build, Test and Push to GHCR
+name: SonarQube
 
 on:
   push:
     branches:
       - main
-      - develop
-      - 'feature/**'
   pull_request:
-    branches:
-      - main
-      - develop
+    types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-test:
-    name: Build, Test and Package
+  build:
+    name: Build and analyze
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for SonarCloud
-
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Clean Maven cache
-        run: mvn dependency:purge-local-repository
-
-      - name: Run tests and generate coverage
-        run: mvn clean verify jacoco:report
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5.0.0
+          java-version: 17
+          distribution: 'zulu' # Alternative distribution options are available.
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build and analyze
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=zetta1973_ecommerce_api
-            -Dsonar.organization=zetta1973
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.branch.name=${{ github.ref_name }}
-
-      - name: Build JAR
-        run: mvn clean package -DskipTests
-
-      - name: Verify JAR exists
-        run: ls -la target/*.jar
-
-      - name: Build Docker image
-        run: docker build -t ecommerce-api:ci --cache-from=ghcr.io/${{ github.repository }}/ecommerce-api:ci --cache-to=type=gha,mode=max .
-
-      - name: Verify Docker image
-        run: docker images | grep ecommerce-api
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Tag and push Docker image to GHCR
-        run: |
-          IMAGE_TAG=ghcr.io/${{ github.repository }}/ecommerce-api:ci-${{ github.sha }}
-          docker tag ecommerce-api:ci $IMAGE_TAG
-          docker push $IMAGE_TAG
-          echo "Image pushed to: $IMAGE_TAG"
-
-      - name: Save Docker image as artifact (optional)
-        run: docker save -o ecommerce-api.tar ecommerce-api:ci
-
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ecommerce-api-docker-image
-          path: ecommerce-api.tar
-          retention-days: 7
+        run: mvn -B verify sonar:sonar -Dsonar.projectKey=zetta1973_ecommerce-api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io
