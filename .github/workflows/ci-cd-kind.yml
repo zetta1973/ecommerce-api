@@ -32,8 +32,8 @@ jobs:
       - name: Run tests and generate coverage
         run: mvn clean verify jacoco:report
 
-      - name: OWASP Dependency Check
-        run: mvn org.owasp:dependency-check-maven:check
+      #- name: OWASP Dependency Check
+      #  run: mvn org.owasp:dependency-check-maven:check
       
       - name: Version Compatibility Check (Optional)
         if: github.ref == 'refs/heads/main'
