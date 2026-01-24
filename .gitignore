@@ -1,45 +1,124 @@
+# Compiled classes and build artifacts
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+!*.jar
+!*.war
+!*.ear
+!*.zip
+!*.tar.gz
+!*.rar
 
-# IDE
-.idea/
-*.iml
-*.iws
-*.ipr
-.vscode/
-.settings/
-.classpath
-.project
-
-# Logs
-*.log
-logs/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Docker
-*.pid
-*.seed
-*.pid.lock
-
-# Maven
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
 .mvn/
 mvnw
 mvnw.cmd
 
-# Application specific
-*.jar
-!gradle-wrapper.jar
-.env
+# IDE files
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+*.iws
+*.ipr
+
+# Log files
+*.log
+logs/
+logs/
+
+# OS generated files
+.DS_Store
+Thumbs.db
 *.swp
 *.swo
 *~
+.tmp
 
-# Kubernetes secrets (DO NOT COMMIT)
-k8s/secrets/
-*.secret.yaml
-secrets.yaml
+# Docker files
+*.pid
+*.seed
+*.pid.lock
+docker-compose.override.yml
+
+# Environment and configuration files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+application-local.properties
+application-dev.properties
+application-test.properties
+
+# Dependency directories
+node_modules/
+.pnp/
+.pnp.js
+
+# Test coverage and reports
+coverage/
+*.lcov
+test-results/
+test-reports/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# SonarQube files
+.sonar/
+.scannerwork/
+
+# Kubernetes manifests (not needed in main repo)
+k8s/
+*.kubeconfig
+kubectl
+
+# Documentation drafts
+docs/draft/
+*.md.bak
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# CI/CD artifacts (not needed in repo)
+*.tar
+ci-artifacts/
+build-artifacts/
+
+# Security files
+*.pem
+*.key
+*.p12
+*.jks
+*.crt
+
+# Package manager files
+package-lock.json
+yarn.lock
+.pnpm-debug.log
+
+# Profiling and monitoring
+*.prof
+*.hprof
+heapdump*.hprof
+
+# Local development only
+docker-compose.local.yml
+docker-compose.dev.yml
+Dockerfile.dev
+.dockerfile.dev
+
+# Generated docs
+site/
+apidocs/
