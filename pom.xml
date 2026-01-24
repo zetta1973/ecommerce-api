@@ -232,6 +232,8 @@
            <nvdApiDelay>10000</nvdApiDelay>
            <nvdMaxRetryCount>10</nvdMaxRetryCount>
            <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
+           <autoUpdate>true</autoUpdate>
+           <purge>true</purge>
            <suppressionFiles>
              <suppressionFile>src/main/resources/owasp-suppressions.xml</suppressionFile>
            </suppressionFiles>
