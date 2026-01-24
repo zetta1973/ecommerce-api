@@ -1,12 +1,12 @@
 # Documentación del Pipeline CI/CD
 
-Este documento proporciona una descripción general del pipeline CI/CD para el proyecto Ecommerce API, incluyendo análisis con SonarCloud, escaneo de dependencias con OWASP, construcción de imágenes Docker y despliegue en GitHub Container Registry.
+Este documento proporciona una descripción general del pipeline CI/CD actual para el proyecto Ecommerce API, incluyendo pruebas, análisis con SonarCloud, construcción de imágenes Docker y despliegue en GitHub Container Registry.
 
 ## Descripción General del Pipeline
 
 El pipeline CI/CD está configurado en `.github/workflows/ci-cd-kind.yml` y se ejecuta en los siguientes eventos:
-- Pushes a las ramas `main`, `develop` y `feature/**`
-- Pull requests que apuntan a las ramas `main` y `develop`
+- **Pushes** a las ramas `main`, `develop` y `feature/**`
+- **Pull requests** que apuntan a las ramas `main` y `develop`
 
 ## Etapas del Pipeline
 
@@ -14,11 +14,10 @@ El pipeline CI/CD está configurado en `.github/workflows/ci-cd-kind.yml` y se e
 ```yaml
 - name: Checkout code
   uses: actions/checkout@v4
+  with:
+    fetch-depth: 0  # Obtener historial completo para SonarCloud
 ```
-
-**Descripción**: Realiza el checkout del código del repositorio usando la acción de checkout de GitHub Actions.
-
----
+Realiza el checkout del repositorio con historial Git completo para análisis de SonarCloud.
 
 ### 2. Configurar JDK 17
 ```yaml
@@ -29,135 +28,69 @@ El pipeline CI/CD está configurado en `.github/workflows/ci-cd-kind.yml` y se e
     distribution: 'temurin'
     cache: 'maven'
 ```
+Configura el entorno Java 17 usando la distribución Eclipse Temurin y cachea las dependencias de Maven.
 
-**Descripción**: Configura el entorno Java 17 usando la distribución Eclipse Temurin y cachea las dependencias de Maven.
-
----
-
-### 3. Ejecutar Pruebas
+### 3. Limpiar Caché de Maven
 ```yaml
-- name: Run tests
-  run: mvn test
+- name: Clean Maven cache
+  run: mvn dependency:purge-local-repository
 ```
+Limpia el repositorio local de Maven para garantizar builds frescos.
 
-**Descripción**: Ejecuta todas las pruebas unitarias e integradas usando Maven.
-
----
-
-### 4. Generar Informe de Cobertura de Pruebas
+### 4. Ejecutar Pruebas y Generar Cobertura
 ```yaml
-- name: Generate test coverage report
-  run: mvn jacoco:report
+- name: Run tests and generate coverage
+  run: mvn clean verify jacoco:report
 ```
+Ejecuta todas las pruebas unitarias e integradas usando Maven y genera reportes de cobertura JaCoCo.
 
-**Descripción**: Genera un informe de cobertura de pruebas usando JaCoCo y lo guarda en `target/site/jacoco/`.
-
----
-
-### 5. Escaneo de Dependencias con OWASP
+### 5. Análisis con SonarCloud
 ```yaml
-- name: OWASP Dependency Check
-  run: mvn org.owasp:dependency-check-maven:9.0.9:check -DfailBuildOnCVSS=7 -DskipUpdate=true
-```
-
-**Propósito**: Escanea las dependencias del proyecto en busca de vulnerabilidades conocidas.
-
-**Configuración**:
-- **Objetivo**: `dependency-check:check` (ejecuta el escaneo de vulnerabilidades)
-- **Umbral CVSS**: `7` (falla el build si se detectan vulnerabilidades con puntuación CVSS >= 7)
-- **Skip Update**: `true` (usa base de datos local para evitar errores de autenticación con la API de NVD)
-
-**Salida**: Genera un informe de vulnerabilidades en `target/dependency-check-report.html`.
-
-**Nota**: El parámetro `skipUpdate` está configurado como `true` para evitar errores de autenticación con la API de NVD en entornos CI. El plugin usa una base de datos local para la detección de vulnerabilidades. La URL de la API de NVD y el retraso están configurados en `pom.xml` para garantizar la compatibilidad.
-
----
-
-### 6. Subir Informe OWASP
-```yaml
-- name: Upload OWASP Report
-  uses: actions/upload-artifact@v4
-  with:
-    name: owasp-report
-    path: target/dependency-check-report.html
-```
-
-**Descripción**: Sube el informe de OWASP Dependency Check como un artifact del build para su revisión.
-
----
-
-### 7. Subir Informe de Cobertura
-```yaml
-- name: Upload coverage report
-  uses: actions/upload-artifact@v4
-  with:
-    name: coverage-report
-    path: target/site/jacoco/
-```
-
-**Descripción**: Sube el informe de cobertura de JaCoCo como un artifact del build.
-
----
-
-### 8. Análisis con SonarCloud
-```yaml
-- name: SonarCloud Analysis
-  uses: SonarSource/sonarcloud-github-action@master
+- name: SonarCloud Scan
   env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=zetta1973_ecommerce_api -Dsonar.organization=zetta1973 -Dsonar.host.url=https://sonarcloud.io
 ```
 
 **Propósito**: Realiza análisis estático de código usando SonarCloud.
 
 **Configuración**:
-- **GITHUB_TOKEN**: Proporcionado automáticamente por GitHub Actions para acceso al repositorio.
-- **SONAR_TOKEN**: Token secreto para autenticación en SonarCloud (debe configurarse en GitHub Secrets).
-
-**Prerrequisitos**:
-1. Crea una cuenta en SonarCloud en [https://sonarcloud.io](https://sonarcloud.io).
-2. Genera un token en SonarCloud (My Account > Security).
-3. Agrega el token como un secreto en GitHub llamado `SONAR_TOKEN`.
+- **SONAR_TOKEN**: Token secreto para autenticación con SonarCloud
+- **Project Key**: `zetta1973_ecommerce_api`
+- **Organización**: `zetta1973`
+- **Host**: `https://sonarcloud.io`
 
 **Configuración de SonarCloud**:
 El proyecto está configurado en `sonar-project.properties`:
 ```properties
-sonar.projectKey=ecommerce-api
+sonar.projectKey=zetta1973_ecommerce_api
 sonar.projectName=Ecommerce API
 sonar.organization=zetta1973
 sonar.host.url=https://sonarcloud.io
-sonar.login=${SONAR_TOKEN}
 sonar.sources=src/main/java
 sonar.tests=src/test/java
 sonar.java.binaries=target/classes
-sonar.jacoco.reportPath=target/site/jacoco/jacoco.xml
+sonar.java.test.binaries=target/test-classes
+sonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 sonar.language=java
 sonar.sourceEncoding=UTF-8
 ```
 
----
-
-### 9. Construir JAR
+### 6. Construir JAR
 ```yaml
 - name: Build JAR
   run: mvn clean package -DskipTests
 ```
+Construye el proyecto y lo empaqueta en un archivo JAR ejecutable de Spring Boot.
 
-**Descripción**: Construye el proyecto y lo empaqueta en un archivo JAR, saltando las pruebas para ahorrar tiempo.
-
----
-
-### 10. Verificar JAR
+### 7. Verificar Existencia del JAR
 ```yaml
 - name: Verify JAR exists
   run: ls -la target/*.jar
 ```
+Verifica que el archivo JAR se haya creado exitosamente.
 
-**Descripción**: Verifica que el archivo JAR se haya creado correctamente.
-
----
-
-### 11. Construir Imagen Docker
+### 8. Construir Imagen Docker
 ```yaml
 - name: Build Docker image
   run: docker build -t ecommerce-api:ci --cache-from=ghcr.io/${{ github.repository }}/ecommerce-api:ci --cache-to=type=gha,mode=max .
@@ -166,27 +99,18 @@ sonar.sourceEncoding=UTF-8
 **Propósito**: Construye una imagen Docker para la aplicación.
 
 **Configuración**:
-- **Etiqueta de la imagen**: `ecommerce-api:ci`
-- **Cache From**: Usa capas cacheadas desde GitHub Container Registry para construcciones más rápidas.
-- **Cache To**: Guarda capas en la caché de GitHub Actions para construcciones futuras.
+- **Etiqueta de Imagen**: `ecommerce-api:ci`
+- **Cache From**: Usa capas cacheadas desde GitHub Container Registry
+- **Cache To**: Guarda capas en la caché de GitHub Actions para builds futuras
 
-**Beneficios**:
-- **Caché**: Reduce el tiempo de construcción reutilizando capas de construcciones anteriores.
-- **Eficiencia**: Minimiza el uso de recursos en entornos CI.
-
----
-
-### 12. Verificar Imagen Docker
+### 9. Verificar Imagen Docker
 ```yaml
 - name: Verify Docker image
   run: docker images | grep ecommerce-api
 ```
+Verifica que la imagen Docker se haya construido exitosamente.
 
-**Descripción**: Verifica que la imagen Docker se haya construido correctamente.
-
----
-
-### 13. Iniciar Sesión en GitHub Container Registry
+### 10. Iniciar Sesión en GitHub Container Registry
 ```yaml
 - name: Login to GitHub Container Registry
   uses: docker/login-action@v3
@@ -195,12 +119,9 @@ sonar.sourceEncoding=UTF-8
     username: ${{ github.actor }}
     password: ${{ secrets.GITHUB_TOKEN }}
 ```
+Autentica con GitHub Container Registry usando el GITHUB_TOKEN.
 
-**Descripción**: Autentica con GitHub Container Registry usando el secreto GITHUB_TOKEN.
-
----
-
-### 14. Etiquetar y Subir Imagen Docker a GHCR
+### 11. Etiquetar y Subir Imagen Docker a GHCR
 ```yaml
 - name: Tag and push Docker image to GHCR
   run: |
@@ -213,16 +134,10 @@ sonar.sourceEncoding=UTF-8
 **Propósito**: Etiqueta y sube la imagen Docker a GitHub Container Registry.
 
 **Configuración**:
-- **Etiqueta de la imagen**: `ghcr.io/{repository}/ecommerce-api:ci-{commit-sha}`
-- **Ejemplo**: `ghcr.io/your-org/ecommerce-api:ci-1a2b3c4d5e6f789`
+- **Etiqueta de Imagen**: `ghcr.io/{repository}/ecommerce-api:ci-{commit-sha}`
+- **Ejemplo**: `ghcr.io/zetta1973/ecommerce-api:ci-1a2b3c4d5e6f789`
 
-**Beneficios**:
-- **Trazabilidad**: Cada imagen se etiqueta con el SHA del commit para un seguimiento fácil.
-- **Versionado**: Permite el rollback a versiones anteriores si es necesario.
-
----
-
-### 15. Guardar Imagen Docker como Artifact
+### 12. Guardar y Subir Imagen Docker como Artifact
 ```yaml
 - name: Save Docker image as artifact (optional)
   run: docker save -o ecommerce-api.tar ecommerce-api:ci
@@ -235,104 +150,138 @@ sonar.sourceEncoding=UTF-8
     retention-days: 7
 ```
 
-**Propósito**: Guarda la imagen Docker como un artifact para su descarga manual si es necesario.
-
-**Configuración**:
-- **Nombre del artifact**: `ecommerce-api-docker-image`
-- **Retención**: 7 días
+**Propósito**: Guarda la imagen Docker como un artifact descargable para inspección manual o despliegue.
 
 ## Secrets Requeridos
 
 Los siguientes secrets deben configurarse en GitHub Secrets (`Settings` > `Secrets and variables` > `Actions`):
 
 ### 1. SONAR_TOKEN
-- **Propósito**: Autentica con SonarCloud para análisis estático de código.
-- **Cómo obtenerlo**: Genera un token en SonarCloud (My Account > Security).
-- **Nota**: Este token es específico de tu cuenta de SonarCloud.
-
-### 2. NVD_API_KEY (Opcional)
-- **Propósito**: Usado por OWASP Dependency Check para actualizar la base de datos NVD.
-- **Cómo obtenerlo**: Solicita una clave API en [NVD API Key Request](https://nvd.nist.gov/developers/request-an-api-key).
-- **Nota**: No es requerido si `skip_update` está configurado como `true` en el plugin de OWASP Dependency Check.
+- **Propósito**: Autentica con SonarCloud para análisis estático de código
+- **Cómo obtenerlo**: Genera un token en SonarCloud (My Account > Security)
+- **Requerido**: Sí
 
 ## Artifacts del Build
 
-Los siguientes artifacts se generan y suben para cada build:
+Los siguientes artifacts se generan para cada build:
 
-1. **Informe OWASP**: `owasp-report` (informe HTML de vulnerabilidades)
-2. **Informe de Cobertura**: `coverage-report` (informe de cobertura de JaCoCo)
-3. **Imagen Docker**: `ecommerce-api-docker-image` (imagen Docker como `.tar`)
+1. **Resultados de Pruebas**: Reportes surefire de Maven
+2. **Reporte de Cobertura**: Reportes XML y HTML de JaCoCo
+3. **Imagen Docker**: `ecommerce-api-docker-image` (imagen Docker como archivo .tar)
+4. **Análisis SonarCloud**: Métricas de calidad de código en dashboard de SonarCloud
 
-## Condiciones de Falla
+## Quality Gates
 
-El pipeline falla en los siguientes escenarios:
+El pipeline enforcea los siguientes quality gates:
 
-1. **Fallas en Pruebas**: Si alguna prueba unitaria o integrada falla.
-2. **Vulnerabilidades CVSS Altas**: Si OWASP Dependency Check detecta vulnerabilidades con puntuación CVSS >= 7.
-3. **Issues de SonarCloud**: Si el análisis de SonarCloud detecta issues críticos (configurable en SonarCloud).
-4. **Fallas en el Build**: Si el build de Maven o la construcción de la imagen Docker falla.
+1. **Pruebas**: Todas las pruebas deben pasar
+2. **Cobertura de Código**: Generada y analizada por JaCoCo
+3. **SonarCloud**: Quality gate debe pasar
+4. **Build**: Build de Maven y build de Docker deben tener éxito
 
-## Buenas Prácticas
+## Optimizaciones de Rendimiento
 
-### 1. Configuración de SonarCloud
-- Configura quality gates en SonarCloud para enforzar estándares de calidad de código.
-- Configura análisis de ramas para monitorear todas las ramas.
-- Configura notificaciones para nuevos issues.
+### Caché de Maven
+- Las dependencias de Maven se cachean entre builds usando caché de GitHub Actions
+- Reduce el tiempo de descarga de dependencias
 
-### 2. OWASP Dependency Check
-- Revisa el informe OWASP regularmente para identificar y corregir vulnerabilidades.
-- Usa el parámetro `suppressionFiles` en `pom.xml` para suprimir falsos positivos.
-- Mantén la base de datos NVD actualizada localmente para entornos de desarrollo.
+### Caché de Capas Docker
+- Usa GitHub Container Registry para caché de capas
+- Caché de GitHub Actions para contexto de build
+- Reduce significativamente el tiempo de build de Docker
 
-### 3. Caché Docker
-- El pipeline usa caché de capas Docker para acelerar las construcciones.
-- Asegúrate de que tu Dockerfile esté optimizado para caché (ej: ordena capas de menos a más cambiantes).
+### Ejecución Paralela
+- Los pasos están optimizados para ejecución secuencial donde existen dependencias
 
-### 4. Seguridad
-- Nunca commite secrets al repositorio.
-- Usa GitHub Secrets para información sensible.
-- Rota los secrets regularmente.
+## Especificaciones del Entorno
+
+- **Versión Java**: 17 (Temurin)
+- **Maven**: Última versión compatible
+- **Docker**: Última versión estable
+- **Spring Boot**: 3.1.2
+- **SonarCloud**: Última versión del scanner
+- **Runner**: ubuntu-latest
+
+## Consideraciones de Seguridad
+
+### Gestión de Tokens
+- Todos los secrets están almacenados en GitHub Secrets
+- Los tokens tienen permisos mínimos requeridos
+- Se recomienda rotación regular
+
+### Escaneo de Dependencias
+- Disponible a través del análisis de SonarCloud
+- No se incluye escaneo OWASP adicional (removido debido a problemas con base de datos H2)
+
+### Seguridad de Contenedores
+- Se recomienda escaneo de imagen base antes de despliegue a producción
+- Builds multi-etapa para superficie de ataque mínima
+
+## Monitoreo y Observabilidad
+
+### Monitoreo de Build
+- GitHub Actions proporciona logs detallados para cada paso
+- Estado del build visible en pestaña Actions del repositorio
+- Retención de artifacts por 7 días
+
+### Monitoreo de Calidad de Código
+- El dashboard de SonarCloud proporciona:
+  - Métricas de cobertura de código
+  - Deuda técnica
+  - Hotspots de seguridad
+  - Issues de mantenibilidad
 
 ## Solución de Problemas
 
-### 1. Fallas en Análisis de SonarCloud
-- **Error**: `Authentication failed`
-  **Solución**: Verifica que `SONAR_TOKEN` esté correctamente configurado en GitHub Secrets.
+### Problemas Comunes y Soluciones
 
-- **Error**: `Project not found`
-  **Solución**: Asegúrate de que `sonar.projectKey` en `sonar-project.properties` coincida con la clave del proyecto en SonarCloud.
+1. **Problemas de Conexión con SonarCloud**
+   - **Error**: Autenticación fallida o proyecto no encontrado
+   - **Solución**: Verificar que SONAR_TOKEN sea correcto y la clave del proyecto coincida con SonarCloud
 
-### 2. Fallas en OWASP Dependency Check
-- **Error**: `NVD API returned 403 or 404`
-  **Solución**: Configura `skip_update: true` en el plugin de OWASP Dependency Check para usar la base de datos local.
+2. **Fallas en Build de Docker**
+   - **Error**: Permiso denegado o fallas en build
+   - **Solución**: Revisar sintaxis de Dockerfile y permisos del repositorio
 
-- **Error**: `No documents exist`
-  **Solución**: Asegúrate de que el plugin de OWASP Dependency Check tenga acceso a las dependencias del proyecto.
+3. **Fallas en Pruebas**
+   - **Error**: Pruebas fallando en CI
+   - **Solución**: Revisar entorno de pruebas y dependencias
 
-### 3. Fallas en Construcción Docker
-- **Error**: `Permission denied`
-  **Solución**: Verifica que el token de GitHub tenga permisos para push a GitHub Container Registry.
+4. **Problemas con Build de Maven**
+   - **Error**: Conflictos de dependencias o fallas de compilación
+   - **Solución**: Limpiar caché de Maven y revisar versiones de dependencias
 
-- **Error**: `Cache not found`
-  **Solución**: La caché se creará en la primera construcción exitosa. Las construcciones posteriores usarán la caché.
+## Buenas Prácticas
 
-### 4. Fallas en Pruebas
-- **Error**: `Tests failed`
-  **Solución**: Revisa la salida de las pruebas para identificar las pruebas fallidas. Corrige el código o actualiza las pruebas según sea necesario.
+### Integración con SonarCloud
+- Configurar quality gates para estándares de calidad de código
+- Configurar análisis de ramas para todas las ramas
+- Revisar y corregir issues regularmente
 
-## Monitoreo y Notificaciones
+### Optimización Docker
+- Ordenar capas de Dockerfile de menos a más frecuentemente cambiantes
+- Usar .dockerignore para excluir archivos innecesarios
+- Aprovechar builds multi-etapa para imágenes más pequeñas
 
-- **GitHub Actions**: Visualiza el estado del build y los logs en la pestaña Actions de tu repositorio.
-- **SonarCloud**: Monitorea métricas de calidad de código e issues en el dashboard de SonarCloud.
-- **Informes OWASP**: Descarga el artifact del informe OWASP para revisar vulnerabilidades.
+### Optimización Maven
+- Usar gestión de dependencias efectivamente
+- Mantener versiones de dependencias actualizadas
+- Remover dependencias no utilizadas
+
+## Archivos de Configuración
+
+- **Workflow Principal**: `.github/workflows/ci-cd-kind.yml`
+- **Configuración Maven**: `pom.xml`
+- **Configuración SonarCloud**: `sonar-project.properties`
+- **Configuración Docker**: `Dockerfile`
 
 ## Conclusión
 
-Este pipeline CI/CD proporciona una solución comprehensiva para construir, probar y desplegar el proyecto Ecommerce API. Incluye:
-- Pruebas automatizadas y análisis de cobertura
-- Análisis estático de código con SonarCloud
-- Escaneo de vulnerabilidades de dependencias con OWASP
-- Construcción y caché de imágenes Docker
-- Despliegue a GitHub Container Registry
+Este pipeline CI/CD proporciona una solución comprehensiva para:
+- Pruebas automatizadas con reporte de cobertura
+- Análisis estático de código y quality gates
+- Construcción eficiente de imágenes Docker con caché
+- Despliegue automatizado a GitHub Container Registry
+- Monitoreo y observabilidad comprehensiva
 
-Siguiendo las buenas prácticas descritas en este documento, puedes asegurarte de un proceso CI/CD robusto y seguro para tu proyecto.
+Siguiendo las prácticas y configuraciones descritas en este documento, aseguras un proceso CI/CD robusto, seguro y eficiente para el proyecto Ecommerce API.
