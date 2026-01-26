@@ -60,6 +60,7 @@ spec:
       containers:
       - name: ecommerce-api
         image: ghcr.io/zetta1973/ecommerce-api:ci-latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
         env:
