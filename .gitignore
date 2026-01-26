@@ -83,16 +83,10 @@ temp/
 jenkins/
 Jenkinsfile
 
-# Kubernetes manifests for deployment
-k8s/
-*.kubeconfig
-kubectl
-
-# API testing collection
-postman/
-
-# Development and deployment scripts
+# Development and deployment scripts (except deployment scripts)
 scripts/
+!scripts/deploy-all.sh
+!scripts/deploy-infrastructure.sh
 
 # Documentation drafts
 docs/draft/
