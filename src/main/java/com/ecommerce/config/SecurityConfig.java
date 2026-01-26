@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -34,12 +35,16 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/admin/ping").permitAll()
-                .requestMatchers("/products").permitAll()
+                .requestMatchers("/api/products").permitAll()
+                .requestMatchers("/api/products/search").permitAll()
 
                 // Protected endpoints
                 .requestMatchers("/admin/users").hasAuthority("READ_USERS")
-                .requestMatchers("/api/products").hasAuthority("CREATE_PRODUCTS")
-                .requestMatchers("/api/products/**").hasAnyAuthority("UPDATE_PRODUCTS", "DELETE_PRODUCTS")
+                .requestMatchers("/api/products/{id}").hasAuthority("READ_PRODUCTS")
+                .requestMatchers("/api/products/{id}/stock").hasAuthority("READ_PRODUCT_STOCK")
+                .requestMatchers(HttpMethod.POST, "/api/products").hasAuthority("CREATE_PRODUCTS")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAuthority("UPDATE_PRODUCTS")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAuthority("DELETE_PRODUCTS")
 
                 // All other requests require authentication
                 .anyRequest().authenticated()
