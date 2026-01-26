@@ -83,10 +83,8 @@ temp/
 jenkins/
 Jenkinsfile
 
-# Development and deployment scripts (except deployment scripts)
-scripts/
-!scripts/deploy-all.sh
-!scripts/deploy-infrastructure.sh
+# Development and deployment scripts
+# scripts/
 
 # Documentation drafts
 docs/draft/
