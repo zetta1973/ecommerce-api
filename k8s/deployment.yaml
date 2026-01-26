@@ -55,7 +55,7 @@ spec:
     spec:
       containers:
       - name: ecommerce-api
-        image: ghcr.io/zetta1973/ecommerce-api:latest
+        image: ghcr.io/zetta1973/ecommerce-api:ci-latest
         ports:
         - containerPort: 8080
         env:
