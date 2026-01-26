@@ -2,23 +2,23 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ecommerce-api-config
-  namespace: default
+  namespace: ecommerce
 data:
   # Application Configuration
-  SPRING_PROFILES_ACTIVE: "production"
+  SPRING_PROFILES_ACTIVE: "local"
   SERVER_PORT: "8080"
   
   # Database Configuration
-  DB_HOST: "postgres-service"
+  DB_HOST: "postgres"
   DB_PORT: "5432"
   DB_NAME: "ecommerce"
   
   # Security Configuration
   JWT_SECRET: "your-jwt-secret-here"
-  CORS_ALLOWED_ORIGINS: "https://yourdomain.com"
+  CORS_ALLOWED_ORIGINS: "http://localhost:3000"
   
   # Kafka Configuration
-  KAFKA_BOOTSTRAP_SERVERS: "kafka-service:9092"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
   KAFKA_GROUP_ID: "ecommerce-group"
 
 ---
@@ -26,20 +26,20 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: ecommerce-api-secrets
-  namespace: default
+  namespace: ecommerce
 type: Opaque
 data:
   # Base64 encoded values
   # Example: echo -n 'your-secret' | base64
-  db-password: "eW91ci1ZGFzZS13LXNvZXJ0"  # base64 for 'your-password'
-  jwt-secret: "eW91ci1qd3Qtc2VjZXJ0LWhlcmU="  # base64 for 'your-jwt-secret'
+  db-password: "cGFzcw=="  # base64 for 'pass'
+  jwt-secret: "eW91ci1qd3Qtc2VjcmV0LWhlcmU="  # base64 for 'your-jwt-secret'
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ecommerce-api
-  namespace: default
+  namespace: ecommerce
   labels:
     app: ecommerce-api
     version: "1.1.7"
@@ -104,7 +104,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ecommerce-api-service
-  namespace: default
+  namespace: ecommerce
 spec:
   selector:
     app: ecommerce-api
@@ -119,7 +119,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: ecommerce-api-hpa
-  namespace: default
+  namespace: ecommerce
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -134,9 +134,9 @@ spec:
       target:
         type: Utilization
         averageUtilization: 70
-    - type: Resource
-      resource:
-        name: memory
+  - type: Resource
+    resource:
+      name: memory
       target:
         type: Utilization
         averageUtilization: 80
@@ -146,13 +146,13 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ecommerce-api-ingress
-  namespace: default
+  namespace: ecommerce
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: ecommerce.yourdomain.com
+  - host: ecommerce.local
     http:
       paths:
       - path: /

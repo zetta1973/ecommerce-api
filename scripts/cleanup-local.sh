@@ -24,13 +24,16 @@ kubectl cluster-info >/dev/null 2>&1 || { echo "❌ No estás conectado a un cl�
 
 # Verificar si el namespace existe
 if kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
-    echo "🗑️  Eliminando deployment y servicio..."
+    echo "🗑️  Eliminando deployments y servicios..."
     kubectl delete deployment,service --all -n "$NAMESPACE" --ignore-not-found=true
 
     echo "⏳ Esperando a que los pods terminen..."
     kubectl wait --for=delete pod --all -n "$NAMESPACE" --timeout=60s 2>/dev/null || true
 
-    echo "📦 Eliminando el namespace completo..."
+    echo "📦 Eliminando secrets y configmaps..."
+    kubectl delete secret,configmap --all -n "$NAMESPACE" --ignore-not-found=true
+
+    echo "🗑️  Eliminando el namespace completo..."
     kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
 
     echo "✅ Limpieza completada. Namespace '$NAMESPACE' eliminado."

@@ -43,57 +43,17 @@ kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -
 # Ruta del manifiesto
 MANIFEST_DIR="k8s"
 MANIFEST="$MANIFEST_DIR/deployment.yaml"
-mkdir -p "$MANIFEST_DIR"
 
-# Generar manifiesto si no existe
+# Verificar que el manifiesto existe
 if [ ! -f "$MANIFEST" ]; then
-    echo "📝 Generando manifiesto básico en $MANIFEST..."
-    cat > "$MANIFEST" << EOF
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ecommerce-api
-  namespace: $NAMESPACE
-  labels:
-    app: ecommerce-api
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ecommerce-api
-  template:
-    metadata:
-      labels:
-        app: ecommerce-api
-    spec:
-      containers:
-      - name: ecommerce-api
-        image: $IMAGE_NAME
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "local"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ecommerce-api
-  namespace: $NAMESPACE
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 80
-    targetPort: 8080
-  selector:
-    app: ecommerce-api
-EOF
-else
-    # Si ya existe, reemplazar la imagen
-    sed -i.bak "s|image:.*|image: $IMAGE_NAME|" "$MANIFEST"
-    echo "🔄 Actualizada la imagen en el manifiesto existente."
+    echo "❌ Error: No se encuentra el manifiesto $MANIFEST"
+    echo "💡 Asegúrate de haber ejecutado primero: ./scripts/deploy-infrastructure.sh"
+    exit 1
 fi
+
+# Actualizar la imagen en el manifiesto existente
+sed -i.bak "s|image:.*|image: $IMAGE_NAME|" "$MANIFEST"
+echo "🔄 Actualizada la imagen en el manifiesto existente."
 
 # Aplicar
 echo "🔧 Aplicando manifiestos..."
@@ -110,5 +70,5 @@ echo "📊 Pods:"
 kubectl get pods -n "$NAMESPACE" -l app=ecommerce-api
 echo ""
 echo "🔗 Para acceder:"
-echo "   kubectl port-forward svc/ecommerce-api 8080:80 -n $NAMESPACE"
+echo "   kubectl port-forward svc/ecommerce-api-service 8080:80 -n $NAMESPACE"
 echo "   Luego abre: http://localhost:8080"

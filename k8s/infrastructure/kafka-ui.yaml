@@ -1,37 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres
+  name: kafka-ui
   namespace: ecommerce
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app: kafka-ui
   template:
     metadata:
       labels:
-        app: postgres
+        app: kafka-ui
     spec:
       containers:
-      - name: postgres
-        image: postgres:15
-        imagePullPolicy: IfNotPresent
+      - name: kafka-ui
+        image: provectuslabs/kafka-ui:latest
+        imagePullPolicy: Always
         env:
-        - name: POSTGRES_DB
-          value: ecommerce
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              key: POSTGRES_USER
-              name: ecommerce-secret
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: POSTGRES_PASSWORD
-              name: ecommerce-secret
+        - name: KAFKA_CLUSTERS_0_NAME
+          value: local
+        - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+          value: kafka:9092
         ports:
-        - containerPort: 5432
+        - containerPort: 8080
           protocol: TCP
         resources: {}
         terminationMessagePath: /dev/termination-log
@@ -45,21 +37,23 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres
+  name: kafka-ui
   namespace: ecommerce
 spec:
-  clusterIP: 10.43.2.70
+  clusterIP: 10.43.46.12
   clusterIPs:
-  - 10.43.2.70
+  - 10.43.46.12
+  externalTrafficPolicy: Cluster
   internalTrafficPolicy: Cluster
   ipFamilies:
   - IPv4
   ipFamilyPolicy: SingleStack
   ports:
-  - port: 5432
+  - nodePort: 30629
+    port: 8080
     protocol: TCP
-    targetPort: 5432
+    targetPort: 8080
   selector:
-    app: postgres
+    app: kafka-ui
   sessionAffinity: None
-  type: ClusterIP
+  type: NodePort
