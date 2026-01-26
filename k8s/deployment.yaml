@@ -42,7 +42,7 @@ metadata:
   namespace: ecommerce
   labels:
     app: ecommerce-api
-    version: "1.1.7"
+    version: "1.2.0"
 spec:
   replicas: 3
   selector:
