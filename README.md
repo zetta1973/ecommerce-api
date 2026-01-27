@@ -1,6 +1,8 @@
-# 🛍️ Ecommerce API
+# 🛍️ Ecommerce API v1.3.5
 
 Plataforma de comercio electrónico construida con Java + Spring Boot, siguiendo la filosofía API-first con OpenAPI 3.0. Totalmente dockerizada y lista para CI/CD con GitHub Actions.
+
+> **Versión 1.3.5** - Proyecto optimizado con limpieza de archivos innecesarios para un CI/CD más eficiente.
 
 ## 🚀 Funcionalidades
 
